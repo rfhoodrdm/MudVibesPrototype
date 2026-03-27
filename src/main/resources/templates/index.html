@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MudVibes Prototype</title>
+    <style>
+        :root {
+            font-family: "Fira Code", "Courier New", Courier, monospace;
+            color-scheme: dark;
+        }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: #080b12;
+            color: #f4f4f4;
+        }
+        header {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #111a2b, #1e2a3f);
+            border-bottom: 1px solid #1a2233;
+        }
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem 2rem;
+            gap: 1rem;
+        }
+        #game-output {
+            flex: 1;
+            background-color: #05070d;
+            border: 1px solid #1f2b40;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        #game-output .line {
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .input-row {
+            display: flex;
+            gap: 0.75rem;
+        }
+        .input-row textarea {
+            flex: 1;
+            min-height: 3.5rem;
+            max-height: 6rem;
+            border-radius: 0.5rem;
+            border: 1px solid #1f2b40;
+            background-color: #0f1624;
+            color: #f4f4f4;
+            padding: 0.75rem;
+            resize: none;
+            font-size: 1rem;
+        }
+        .input-row button {
+            width: 7rem;
+            border-radius: 0.5rem;
+            border: none;
+            background-color: #4263eb;
+            color: white;
+            font-weight: 600;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .input-row button:disabled {
+            background-color: #556080;
+            cursor: not-allowed;
+        }
+        .status-bar {
+            font-size: 0.9rem;
+            color: #9aa4c2;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>MudVibes Prototype</h1>
+    <p class="status-bar" id="connection-status">Connecting…</p>
+</header>
+<main>
+    <div id="game-output" aria-live="polite"></div>
+    <div class="input-row">
+        <textarea id="player-input" rows="2" placeholder="Enter your command here"></textarea>
+        <button id="submit-btn">SUBMIT</button>
+    </div>
+</main>
+<script>
+    const outputEl = document.getElementById('game-output');
+    const inputEl = document.getElementById('player-input');
+    const submitBtn = document.getElementById('submit-btn');
+    const statusEl = document.getElementById('connection-status');
+
+    let socket;
+
+    const appendLine = (text) => {
+        const node = document.createElement('div');
+        node.className = 'line';
+        node.textContent = text;
+        outputEl.appendChild(node);
+        outputEl.scrollTop = outputEl.scrollHeight;
+    };
+
+    const setConnectionState = (text) => {
+        statusEl.textContent = text;
+    };
+
+    const connect = () => {
+        const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const url = `${scheme}://${window.location.host}/ws/mud`;
+        socket = new WebSocket(url);
+
+        socket.addEventListener('open', () => {
+            setConnectionState('Connected to server');
+            submitBtn.disabled = false;
+        });
+
+        socket.addEventListener('close', () => {
+            setConnectionState('Disconnected. Reconnecting…');
+            submitBtn.disabled = true;
+            setTimeout(connect, 1500);
+        });
+
+        socket.addEventListener('error', () => {
+            setConnectionState('Connection error, retrying…');
+        });
+
+        socket.addEventListener('message', (event) => {
+            appendLine(event.data);
+        });
+    };
+
+    const sendInput = () => {
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+            appendLine('[system] Cannot send command while disconnected.');
+            return;
+        }
+        const text = inputEl.value.trim();
+        if (!text.length) {
+            appendLine('[system] Please type a command.');
+            return;
+        }
+        socket.send(text);
+        inputEl.value = '';
+    };
+
+    submitBtn.addEventListener('click', sendInput);
+
+    inputEl.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            sendInput();
+        }
+    });
+
+    connect();
+</script>
+</body>
+</html>
