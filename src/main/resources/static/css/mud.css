@@ -1,0 +1,77 @@
+:root {
+    font-family: "Fira Code", "Courier New", Courier, monospace;
+    color-scheme: dark;
+}
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #080b12;
+    color: #f4f4f4;
+}
+header {
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, #111a2b, #1e2a3f);
+    border-bottom: 1px solid #1a2233;
+}
+main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem 2rem;
+    gap: 1rem;
+}
+.output-wrapper {
+    flex: 1;
+    display: flex;
+}
+#game-output {
+    flex: 1;
+    background-color: #05070d;
+    border: 1px solid #1f2b40;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    overflow-y: auto;
+    resize: none;
+    color: #f4f4f4;
+    font-family: "Fira Code", "Courier New", Courier, monospace;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    background-image: radial-gradient(circle at top, rgba(255, 255, 255, 0.05), transparent 70%);
+}
+.input-row {
+    display: flex;
+    gap: 0.75rem;
+}
+.input-row textarea {
+    flex: 1;
+    min-height: 3.5rem;
+    max-height: 6rem;
+    border-radius: 0.5rem;
+    border: 1px solid #1f2b40;
+    background-color: #0f1624;
+    color: #f4f4f4;
+    padding: 0.75rem;
+    resize: none;
+    font-size: 1rem;
+}
+.input-row button {
+    width: 7rem;
+    border-radius: 0.5rem;
+    border: none;
+    background-color: #4263eb;
+    color: white;
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+.input-row button:disabled {
+    background-color: #556080;
+    cursor: not-allowed;
+}
+.status-bar {
+    font-size: 0.9rem;
+    color: #9aa4c2;
+}

@@ -1,0 +1,6 @@
+
+
+logging: 
+  level:
+    com.example.mudvibe.logic: INFO 
+    com.example.mudvibe.state: INFO
