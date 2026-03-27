@@ -4,6 +4,7 @@ const submitBtn = document.getElementById('submit-btn');
 const statusEl = document.getElementById('connection-status');
 
 let socket;
+const MAX_OUTPUT_LINES = 400;
 
 const isAtBottom = () => {
     return outputEl.scrollTop + outputEl.clientHeight >= outputEl.scrollHeight - 4;
@@ -13,12 +14,19 @@ const appendLine = (text) => {
     const stickToBottom = isAtBottom();
     const previousScroll = outputEl.scrollTop;
 
-    outputEl.value = `${outputEl.value}${outputEl.value ? '\n' : ''}${text}`;
+    const combined = `${outputEl.value}${outputEl.value ? '\n' : ''}${text}`;
+    const lines = combined.split('\n');
+
+    if (lines.length > MAX_OUTPUT_LINES) {
+        outputEl.value = lines.slice(lines.length - MAX_OUTPUT_LINES).join('\n');
+    } else {
+        outputEl.value = combined;
+    }
 
     if (stickToBottom) {
         outputEl.scrollTop = outputEl.scrollHeight;
     } else {
-        outputEl.scrollTop = previousScroll;
+        outputEl.scrollTop = Math.min(previousScroll, outputEl.scrollHeight);
     }
 };
 
