@@ -16,17 +16,26 @@ const appendLine = (text) => {
 
     const combined = `${outputEl.value}${outputEl.value ? '\n' : ''}${text}`;
     const lines = combined.split('\n');
+    const trimmedValue =
+        lines.length > MAX_OUTPUT_LINES
+            ? lines.slice(lines.length - MAX_OUTPUT_LINES).join('\n')
+            : combined;
 
-    if (lines.length > MAX_OUTPUT_LINES) {
-        outputEl.value = lines.slice(lines.length - MAX_OUTPUT_LINES).join('\n');
-    } else {
-        outputEl.value = combined;
-    }
+    outputEl.value = trimmedValue;
 
-    if (stickToBottom) {
-        outputEl.scrollTop = outputEl.scrollHeight;
+    const restoreScroll = () => {
+        if (stickToBottom) {
+            outputEl.scrollTop = outputEl.scrollHeight;
+            return;
+        }
+        const maxScroll = Math.max(0, outputEl.scrollHeight - outputEl.clientHeight);
+        outputEl.scrollTop = Math.min(previousScroll, maxScroll);
+    };
+
+    if (typeof window.requestAnimationFrame === 'function') {
+        window.requestAnimationFrame(restoreScroll);
     } else {
-        outputEl.scrollTop = Math.min(previousScroll, outputEl.scrollHeight);
+        restoreScroll();
     }
 };
 
