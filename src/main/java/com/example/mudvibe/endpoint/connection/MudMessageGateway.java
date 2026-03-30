@@ -2,20 +2,22 @@ package com.example.mudvibe.endpoint.connection;
 
 import java.io.IOException;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
-import com.example.mudvibe.common.interfaces.data.message.AddressedOutboundMessage;
-import com.example.mudvibe.common.interfaces.data.message.OutboundMessage;
 import com.example.mudvibe.common.interfaces.service.message.IncomingCommandQueueService;
 import com.example.mudvibe.common.interfaces.service.message.OutboundMessagePublisher;
+import com.example.mudvibe.common.interfaces.service.session.SessionManagerService;
+import com.example.mudvibe.data.messages.inbound.IncomingCommand;
+import com.example.mudvibe.data.messages.inbound.character.IncomingCharacterCommand;
+import com.example.mudvibe.data.messages.inbound.system.IncomingPlayerManagementCommand;
+import com.example.mudvibe.data.messages.outbound.AddressedOutboundMessage;
 import com.example.mudvibe.data.messages.outbound.EchoMessage;
-import com.example.mudvibe.data.messages.outbound.GreetingMessage;
+import com.example.mudvibe.data.messages.outbound.OutboundMessage;
+import com.example.mudvibe.data.messages.outbound.SimpleOutboundMessage;
 import com.example.mudvibe.data.messages.outbound.SystemBroadcastMessage;
 import com.example.mudvibe.data.messages.outbound.SystemErrorMessage;
 import com.example.mudvibe.util.incomingcommand.IncomingTextCommandParserUtil;
@@ -29,10 +31,11 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class MudMessageGateway implements OutboundMessagePublisher {
     
-	private final SessionManager sessionManager;
     private final IncomingTextCommandParserUtil commandParser;
     private final IncomingCommandQueueService commandQueue;
     private final OutboundMessageFormatterUtil outboundMessageFormatter;
+    
+	private final SessionManagerService sessionManager;
 
     /* ********************************************************
      * 					    Public Methods
@@ -61,15 +64,16 @@ public class MudMessageGateway implements OutboundMessagePublisher {
 		var echo = new EchoMessage(messagePayload);
 		sendTo(session, echo);
 	
-		var parsedIncomingCommand = commandParser.parseCommand(messagePayload);
-    	if (parsedIncomingCommand.isValid()) {
-    		commandQueue.enqueueCommand(parsedIncomingCommand.parsedCommand());
+		var result = commandParser.parseCommand(messagePayload);
+    	if (result.isValid()) {
+    		routeCommand(session, result.parsedCommand());
     	} else {
     		var errorMessage = new SystemErrorMessage("Invalid command: " + messagePayload);
     		sendTo(session, errorMessage );
     	}	
 	}
-	
+
+
 	public void deliverOutBoundMessage(AddressedOutboundMessage addressedOutboundMessage) {
 		UUID playerId = addressedOutboundMessage.recipientPlayerId();
 	
@@ -77,7 +81,6 @@ public class MudMessageGateway implements OutboundMessagePublisher {
 				session -> sendTo(session, addressedOutboundMessage), 
 				() -> log.warn("Skipping message transmission: Could not find an available session for player with id {}", playerId)
 			);
-
 	}
 
 	public void sendSystemBroadcast(SystemBroadcastMessage broadcastMessage) {
@@ -89,13 +92,20 @@ public class MudMessageGateway implements OutboundMessagePublisher {
     /* ********************************************************
      * 					    Helper Methods
      * ********************************************************/
-    
-	private void greetNewSession(WebSocketSession session) {
-		log.debug("Inside greetNewSession(). Session id: {}", session.getId());
+	
+	/**
+	 * Route commands to where they need to go to be processed.
+	 * Simple results or error messages may be returned. Complex updates, e.g. from character actions, will need to be routed.
+	 */
+	private void routeCommand(WebSocketSession session, IncomingCommand command) {
 		
-		//TODO: refactor to use result sender module.
-		var greeting = new GreetingMessage();
-		sendTo(session, greeting);
+		Optional<SimpleOutboundMessage> result = switch (command) {
+			case IncomingPlayerManagementCommand ipmc -> sessionManager.handleCharacterManagementCommand(session, ipmc);
+			case IncomingCharacterCommand icc-> commandQueue.enqueueCommand(icc);
+			case null, default -> Optional.of(new SystemErrorMessage("Unrecognized command: " + command.rawCommandText()));
+		};
+		
+		result.ifPresent(message -> sendTo(session, message));
 	}
 	
 	private void sendTo(WebSocketSession session, OutboundMessage message) {

@@ -1,8 +1,6 @@
-package com.example.mudvibe.common.interfaces.data.message;
+package com.example.mudvibe.data.messages.outbound;
 
 import java.util.UUID;
-
-import com.example.mudvibe.data.messages.outbound.AddressedSystemNotificationMessage;
 
 public sealed interface AddressedOutboundMessage extends OutboundMessage permits AddressedSystemNotificationMessage {
 
