@@ -1,4 +1,4 @@
-package com.example.mudvibe.common.interfaces.data.message.outbound;
+package com.example.mudvibe.data.messages.outbound;
 
 public sealed interface OutboundMessage permits SimpleOutboundMessage, AddressedOutboundMessage {
 

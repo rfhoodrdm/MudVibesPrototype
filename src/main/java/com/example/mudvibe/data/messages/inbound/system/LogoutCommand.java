@@ -1,7 +1,5 @@
 package com.example.mudvibe.data.messages.inbound.system;
 
-import com.example.mudvibe.common.interfaces.data.message.incoming.IncomingPlayerManagementCommand;
-
-public record LogoutCommand(String playerName) implements IncomingPlayerManagementCommand {
+public record LogoutCommand(String rawCommandText, String playerName) implements IncomingPlayerManagementCommand {
 
 }

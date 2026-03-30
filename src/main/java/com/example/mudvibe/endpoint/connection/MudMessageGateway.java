@@ -8,19 +8,16 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
-import com.example.mudvibe.common.interfaces.data.message.incoming.IncomingCharacterCommand;
-import com.example.mudvibe.common.interfaces.data.message.incoming.IncomingCommand;
-import com.example.mudvibe.common.interfaces.data.message.incoming.IncomingPlayerManagementCommand;
-import com.example.mudvibe.common.interfaces.data.message.outbound.AddressedOutboundMessage;
-import com.example.mudvibe.common.interfaces.data.message.outbound.OutboundMessage;
-import com.example.mudvibe.common.interfaces.data.message.outbound.SimpleOutboundMessage;
 import com.example.mudvibe.common.interfaces.service.message.IncomingCommandQueueService;
 import com.example.mudvibe.common.interfaces.service.message.OutboundMessagePublisher;
 import com.example.mudvibe.common.interfaces.service.session.SessionManagerService;
-import com.example.mudvibe.data.messages.inbound.system.LoginCommand;
-import com.example.mudvibe.data.messages.inbound.system.RegisterCharacterCommand;
+import com.example.mudvibe.data.messages.inbound.IncomingCommand;
+import com.example.mudvibe.data.messages.inbound.character.IncomingCharacterCommand;
+import com.example.mudvibe.data.messages.inbound.system.IncomingPlayerManagementCommand;
+import com.example.mudvibe.data.messages.outbound.AddressedOutboundMessage;
 import com.example.mudvibe.data.messages.outbound.EchoMessage;
-import com.example.mudvibe.data.messages.outbound.GreetingMessage;
+import com.example.mudvibe.data.messages.outbound.OutboundMessage;
+import com.example.mudvibe.data.messages.outbound.SimpleOutboundMessage;
 import com.example.mudvibe.data.messages.outbound.SystemBroadcastMessage;
 import com.example.mudvibe.data.messages.outbound.SystemErrorMessage;
 import com.example.mudvibe.util.incomingcommand.IncomingTextCommandParserUtil;
@@ -105,18 +102,10 @@ public class MudMessageGateway implements OutboundMessagePublisher {
 		Optional<SimpleOutboundMessage> result = switch (command) {
 			case IncomingPlayerManagementCommand ipmc -> sessionManager.handleCharacterManagementCommand(session, ipmc);
 			case IncomingCharacterCommand icc-> commandQueue.enqueueCommand(icc);
-			case null, default -> Optional.of(new SystemErrorMessage("Unrecognized command: " + command));
+			case null, default -> Optional.of(new SystemErrorMessage("Unrecognized command: " + command.rawCommandText()));
 		};
 		
 		result.ifPresent(message -> sendTo(session, message));
-	}
-	
-	private void greetNewSession(WebSocketSession session) {
-		log.debug("Inside greetNewSession(). Session id: {}", session.getId());
-		
-		//TODO: refactor to use result sender module.
-		var greeting = new GreetingMessage();
-		sendTo(session, greeting);
 	}
 	
 	private void sendTo(WebSocketSession session, OutboundMessage message) {

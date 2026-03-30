@@ -2,10 +2,10 @@ package com.example.mudvibe.util.outboundmessage;
 
 import org.springframework.stereotype.Component;
 
-import com.example.mudvibe.common.interfaces.data.message.outbound.OutboundMessage;
 import com.example.mudvibe.data.messages.outbound.AddressedSystemNotificationMessage;
 import com.example.mudvibe.data.messages.outbound.EchoMessage;
 import com.example.mudvibe.data.messages.outbound.GreetingMessage;
+import com.example.mudvibe.data.messages.outbound.OutboundMessage;
 import com.example.mudvibe.data.messages.outbound.SimpleSystemResponseMessage;
 import com.example.mudvibe.data.messages.outbound.SystemBroadcastMessage;
 import com.example.mudvibe.data.messages.outbound.SystemErrorMessage;

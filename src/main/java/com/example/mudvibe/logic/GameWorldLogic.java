@@ -5,10 +5,10 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
-import com.example.mudvibe.common.interfaces.data.message.incoming.IncomingCommand;
 import com.example.mudvibe.common.interfaces.service.message.IncomingCommandQueueService;
 import com.example.mudvibe.common.interfaces.service.message.OutboundMessagePublisher;
 import com.example.mudvibe.data.gamestate.GameWorldState;
+import com.example.mudvibe.data.messages.inbound.IncomingCommand;
 import com.example.mudvibe.util.system.SystemClockUtil;
 
 import lombok.RequiredArgsConstructor;

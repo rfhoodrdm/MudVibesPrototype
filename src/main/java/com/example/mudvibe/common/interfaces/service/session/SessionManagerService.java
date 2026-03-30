@@ -6,10 +6,10 @@ import java.util.UUID;
 
 import org.springframework.web.socket.WebSocketSession;
 
-import com.example.mudvibe.common.interfaces.data.message.incoming.IncomingPlayerManagementCommand;
-import com.example.mudvibe.common.interfaces.data.message.outbound.SimpleOutboundMessage;
+import com.example.mudvibe.data.messages.inbound.system.IncomingPlayerManagementCommand;
 import com.example.mudvibe.data.messages.inbound.system.LoginCommand;
 import com.example.mudvibe.data.messages.inbound.system.RegisterCharacterCommand;
+import com.example.mudvibe.data.messages.outbound.SimpleOutboundMessage;
 
 public interface SessionManagerService {
 

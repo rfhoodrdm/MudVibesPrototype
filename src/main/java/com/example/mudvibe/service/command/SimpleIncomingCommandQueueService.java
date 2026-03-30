@@ -8,9 +8,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.springframework.stereotype.Service;
 
-import com.example.mudvibe.common.interfaces.data.message.incoming.IncomingCommand;
-import com.example.mudvibe.common.interfaces.data.message.outbound.SimpleOutboundMessage;
 import com.example.mudvibe.common.interfaces.service.message.IncomingCommandQueueService;
+import com.example.mudvibe.data.messages.inbound.IncomingCommand;
+import com.example.mudvibe.data.messages.outbound.SimpleOutboundMessage;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

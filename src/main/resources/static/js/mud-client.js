@@ -10,24 +10,28 @@ const isAtBottom = () => {
     return outputEl.scrollTop + outputEl.clientHeight >= outputEl.scrollHeight - 4;
 };
 
-const appendLine = (text) => {
+const appendLines = (rawText) => {
+    const linesToAdd = rawText.split(/\r?\n/);
     const stickToBottom = isAtBottom();
     const previousScroll = outputEl.scrollTop;
 
-    const combined = `${outputEl.value}${outputEl.value ? '\n' : ''}${text}`;
-    const lines = combined.split('\n');
-    const trimmedValue =
-        lines.length > MAX_OUTPUT_LINES
-            ? lines.slice(lines.length - MAX_OUTPUT_LINES).join('\n')
-            : combined;
+    linesToAdd.forEach((text) => {
+        const combined = `${outputEl.value}${outputEl.value ? '\n' : ''}${text}`;
+        const lines = combined.split('\n');
+        const trimmedValue =
+            lines.length > MAX_OUTPUT_LINES
+                ? lines.slice(lines.length - MAX_OUTPUT_LINES).join('\n')
+                : combined;
 
-    outputEl.value = trimmedValue;
+        outputEl.value = trimmedValue;
+    });
+
+    if (stickToBottom) {
+        outputEl.scrollTop = outputEl.scrollHeight;
+        return;
+    }
 
     const restoreScroll = () => {
-        if (stickToBottom) {
-            outputEl.scrollTop = outputEl.scrollHeight;
-            return;
-        }
         const maxScroll = Math.max(0, outputEl.scrollHeight - outputEl.clientHeight);
         outputEl.scrollTop = Math.min(previousScroll, maxScroll);
     };
@@ -64,18 +68,18 @@ const connect = () => {
     });
 
     socket.addEventListener('message', (event) => {
-        appendLine(event.data);
+        appendLines(event.data);
     });
 };
 
 const sendInput = () => {
     if (!socket || socket.readyState !== WebSocket.OPEN) {
-        appendLine('[system] Cannot send command while disconnected.');
+        appendLines('[system] Cannot send command while disconnected.');
         return;
     }
     const text = inputEl.value.trim();
     if (!text.length) {
-        appendLine('[client] Please type a command.');
+        appendLines('[client] Please type a command.');
         return;
     }
     socket.send(text);

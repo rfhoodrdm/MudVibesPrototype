@@ -13,13 +13,13 @@ import org.springframework.web.socket.WebSocketSession;
 import com.example.mudvibe.common.exception.CharacterLoginException;
 import com.example.mudvibe.common.exception.PlayerRegistrationException;
 import com.example.mudvibe.common.exception.PlayerSaveDataException;
-import com.example.mudvibe.common.interfaces.data.message.incoming.IncomingPlayerManagementCommand;
-import com.example.mudvibe.common.interfaces.data.message.outbound.SimpleOutboundMessage;
 import com.example.mudvibe.common.interfaces.service.player.PlayerManagerService;
 import com.example.mudvibe.common.interfaces.service.session.SessionManagerService;
+import com.example.mudvibe.data.messages.inbound.system.IncomingPlayerManagementCommand;
 import com.example.mudvibe.data.messages.inbound.system.LoginCommand;
 import com.example.mudvibe.data.messages.inbound.system.LogoutCommand;
 import com.example.mudvibe.data.messages.inbound.system.RegisterCharacterCommand;
+import com.example.mudvibe.data.messages.outbound.SimpleOutboundMessage;
 import com.example.mudvibe.data.messages.outbound.SimpleSystemResponseMessage;
 import com.example.mudvibe.data.messages.outbound.SystemErrorMessage;
 import com.example.mudvibe.util.data.CharacterNameNormalizationUtil;
@@ -121,7 +121,6 @@ public class SimpleSessionManagerService implements SessionManagerService {
     }
 
 	@Override
-	@Transactional(rollbackFor = Exception.class)
 	public Optional<SimpleOutboundMessage> handleCharacterManagementCommand(WebSocketSession session, IncomingPlayerManagementCommand ipmc) {
 		if (session == null || ipmc == null) {
 			return Optional.of(new SystemErrorMessage("Invalid session or command."));
