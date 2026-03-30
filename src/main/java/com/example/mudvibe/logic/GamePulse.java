@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 public class GamePulse {
 	
     private static final int TARGET_UPDATES_PER_SECOND = 4;	//TODO: eventually move this to a config property.
-    private static final int UPDATE_TICK_TIME_MS = 1000 / TARGET_UPDATES_PER_SECOND; // ~16ms per frame
+    private static final int UPDATE_TICK_TIME_MS = 1000 / TARGET_UPDATES_PER_SECOND;
 	
 	private final Logic logic;
 	

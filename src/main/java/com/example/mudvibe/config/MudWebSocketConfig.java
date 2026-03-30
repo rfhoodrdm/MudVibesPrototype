@@ -5,7 +5,7 @@ import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 
-import com.example.mudvibe.endpoint.MudWebSocketHandler;
+import com.example.mudvibe.endpoint.connection.MudWebSocketHandler;
 
 import lombok.RequiredArgsConstructor;
 
