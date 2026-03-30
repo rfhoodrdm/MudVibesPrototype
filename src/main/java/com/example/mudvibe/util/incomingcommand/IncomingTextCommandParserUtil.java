@@ -3,7 +3,7 @@ package com.example.mudvibe.util.incomingcommand;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import com.example.mudvibe.common.interfaces.data.message.IncomingCommand;
+import com.example.mudvibe.common.interfaces.data.message.incoming.IncomingCommand;
 
 import lombok.extern.slf4j.Slf4j;
 

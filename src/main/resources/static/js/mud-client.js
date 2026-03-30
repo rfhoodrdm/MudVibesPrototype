@@ -75,7 +75,7 @@ const sendInput = () => {
     }
     const text = inputEl.value.trim();
     if (!text.length) {
-        appendLine('[system] Please type a command.');
+        appendLine('[client] Please type a command.');
         return;
     }
     socket.send(text);

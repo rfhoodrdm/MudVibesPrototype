@@ -1,4 +1,4 @@
-package com.example.mudvibe.common.interfaces.data.message;
+package com.example.mudvibe.common.interfaces.data.message.outbound;
 
 import java.util.UUID;
 

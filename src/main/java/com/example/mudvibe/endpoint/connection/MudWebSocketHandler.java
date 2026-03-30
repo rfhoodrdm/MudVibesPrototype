@@ -6,6 +6,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import com.example.mudvibe.common.interfaces.service.session.SessionManagerService;
 import com.example.mudvibe.data.messages.outbound.GreetingMessage;
 import com.example.mudvibe.data.messages.outbound.SystemErrorMessage;
 
@@ -20,7 +21,7 @@ public class MudWebSocketHandler extends TextWebSocketHandler {
 	public static final String INVALID_COMMAND_TEXT = "<invalid command text>";
 
     private final MudMessageGateway messageGateway;
-    private final SessionManager sessionManager;
+    private final SessionManagerService sessionManager;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {

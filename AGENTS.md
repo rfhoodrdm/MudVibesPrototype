@@ -16,3 +16,5 @@ MudVibesProto is a prototype Spring Boot service that handles running a MUD-styl
 
 ## Coding style
 - Log at debug level entering and exiting of methods. Log parameters passed in if they're not too verbose or unwieldy.
+- Prefer utility methods like StringUtils.isBlank() and CollectionUtils.isEmpty() to determine String and Collection properties, if possible.
+- Prefer returning Optional.empty() instead of null when there may be a lack of a value returned from a method.
