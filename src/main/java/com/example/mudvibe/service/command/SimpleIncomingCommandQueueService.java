@@ -22,6 +22,9 @@ public class SimpleIncomingCommandQueueService implements IncomingCommandQueueSe
 
 	private final Queue<IncomingCommand> queuedCommands = new ConcurrentLinkedQueue<>();
 
+	/**
+	 * No message needed on successful enqueue.
+	 */
 	@Override
 	public Optional<SimpleOutboundMessage> enqueueCommand(IncomingCommand incomingCommand) {
 		log.debug("Inside enqueueCommand(). Incoming command: {}", incomingCommand);
@@ -30,7 +33,9 @@ public class SimpleIncomingCommandQueueService implements IncomingCommandQueueSe
 			log.debug("Leaving enqueueCommand(). Cannot enqueue null command.");
 			return Optional.empty();
 		}
-
+		
+		boolean result = queuedCommands.offer(incomingCommand);
+		log.debug("Leaving enqueueCommand(). Enqueue success: {}", result);
 		return Optional.empty();
 	}
 
