@@ -1,4 +1,4 @@
-package com.example.mudvibe.endpoint;
+package com.example.mudvibe.endpoint.view;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;

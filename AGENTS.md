@@ -12,3 +12,7 @@ MudVibesProto is a prototype Spring Boot service that handles running a MUD-styl
 
 ## Back-end
 - Leverages Spring Boot components to handle the needs of running the game. E.g. a method decorated with @Scheduled to serve as the game update clock.
+
+
+## Coding style
+- Log at debug level entering and exiting of methods. Log parameters passed in if they're not too verbose or unwieldy.

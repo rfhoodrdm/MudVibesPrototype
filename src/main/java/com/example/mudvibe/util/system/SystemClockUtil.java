@@ -1,4 +1,4 @@
-package com.example.mudvibe.util;
+package com.example.mudvibe.util.system;
 
 import java.time.Instant;
 
