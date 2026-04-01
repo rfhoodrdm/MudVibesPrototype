@@ -4,12 +4,17 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import com.example.mudvibe.common.enums.MovementDirection;
+import com.example.mudvibe.common.exception.InvalidCommandException;
+import com.example.mudvibe.common.exception.UnknownCommandException;
 import com.example.mudvibe.data.messages.inbound.IncomingCommand;
+import com.example.mudvibe.data.messages.inbound.character.LookCommand;
 import com.example.mudvibe.data.messages.inbound.character.MoveCharacterCommand;
 import com.example.mudvibe.data.messages.inbound.system.LoginCommand;
 import com.example.mudvibe.data.messages.inbound.system.LogoutCommand;
@@ -22,15 +27,21 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class IncomingTextCommandParserUtil {
 	
+	public static final String INVALID_COMMAND_MUST_BE_LOGGED_IN = "Must be logged in";
+	public static final String INVALID_COMMAND_LOOK_USAGE = "LOOK  -or-  LOOK <object/character>  -or-  LOOK <object/character> <ordinal number>";
+	
     /* ********************************************************
      * 					    Public Methods
      * ********************************************************/
 	
 	/**
-	 * 1) Text command should be not blank.
+	 * Parses 
+	 * @throws UnknownCommandException if a command cannot be recognized at all.
+	 * @throws InvalidCommandException if a command is recognized but not valid. E.g. missing parts to complete.
 	 */
-	public IncomingCommandParserResult parseCommand(String commandToParse) {
-		log.debug("Inside parseCommand(). Command to parse: {}", commandToParse);
+	public IncomingCommandParserResult parseCommand(String commandToParse, Optional<UUID> commandingPlayerIdMaybe) 
+			throws InvalidCommandException, UnknownCommandException {
+		log.debug("Inside parseCommand(). Commanding player id: {}. Command to parse: {}", commandingPlayerIdMaybe, commandToParse);
 		
 		if(!StringUtils.hasText(commandToParse)) {
 			log.debug("Command is invalid");
@@ -38,7 +49,7 @@ public class IncomingTextCommandParserUtil {
 		}
 		
 		String sanitizedTextCommand = commandToParse.trim();
-		var incomingCommand = parseStringToIncomingCommand(sanitizedTextCommand);
+		var incomingCommand = parseStringToIncomingCommand(commandingPlayerIdMaybe, sanitizedTextCommand);
 		return new IncomingCommandParserResult(incomingCommand, true);
 	}
 	
@@ -46,7 +57,8 @@ public class IncomingTextCommandParserUtil {
      * 					    Helper Methods
      * ********************************************************/
 	
-	private IncomingCommand parseStringToIncomingCommand(String commandTextToParse) {
+	private IncomingCommand parseStringToIncomingCommand(Optional<UUID> commandingPlayerIdMaybe, String commandTextToParse)
+			throws InvalidCommandException {
 		String[] tokens = commandTextToParse.split("\\s+");
 		if (tokens.length == 0) {
 			return unknownCommand(commandTextToParse);
@@ -56,12 +68,14 @@ public class IncomingTextCommandParserUtil {
         String[] commandArguments = tokens.length > 1 ? Arrays.copyOfRange(tokens, 1, tokens.length) : new String[0];
 		
         switch (commandRootWord) {
+        case "look":
+        	return createLookCommand(commandingPlayerIdMaybe, commandTextToParse, commandArguments);
 		case "login":
-			return createPlayerManagementCommand(commandTextToParse, commandArguments, CommandType.LOGIN);
+			return createPlayerManagementCommand(commandingPlayerIdMaybe, commandTextToParse, commandArguments, SystemCommandType.LOGIN);
 		case "logout":
-			return createPlayerManagementCommand(commandTextToParse, commandArguments, CommandType.LOGOUT);
+			return createPlayerManagementCommand(commandingPlayerIdMaybe, commandTextToParse, commandArguments, SystemCommandType.LOGOUT);
 		case "register":
-			return createPlayerManagementCommand(commandTextToParse, commandArguments, CommandType.REGISTER);
+			return createPlayerManagementCommand(commandingPlayerIdMaybe, commandTextToParse, commandArguments, SystemCommandType.REGISTER);
         case "north": case "n":
         case "south": case "s":
         case "east": case "e":
@@ -72,13 +86,54 @@ public class IncomingTextCommandParserUtil {
         case "southwest": case "sw": case "south-west":
         case "up": case "u":
         case "down": case "d":
-            return createMovementCommand(commandTextToParse, commandRootWord);
+            return createMovementCommand(commandingPlayerIdMaybe, commandTextToParse, commandRootWord);
 		default:
 			return unknownCommand(commandTextToParse);
 		}
 	}
 	
-	private IncomingCommand createPlayerManagementCommand(String rawText, String[] commandArgs, CommandType type) {
+	private IncomingCommand createLookCommand(Optional<UUID> commandingPlayerIdMaybe, String rawText, String[] commandArguments)
+			throws InvalidCommandException {
+		UUID commandingPlayerId = commandingPlayerIdMaybe
+				.orElseThrow(() -> new InvalidCommandException(INVALID_COMMAND_MUST_BE_LOGGED_IN));
+		
+		if (commandArguments.length > 2) {
+			throw new InvalidCommandException(INVALID_COMMAND_LOOK_USAGE);
+		}
+		
+		Optional<String> targetNameMaybe = Optional.empty();
+		Optional<Integer> targetOrdinalMaybe = Optional.empty();
+		
+		if (commandArguments.length >= 1) {
+			String targetNameToken = commandArguments[0];
+			if (!StringUtils.hasText(targetNameToken)) {
+				throw new InvalidCommandException(INVALID_COMMAND_LOOK_USAGE);
+			}
+			targetNameMaybe = Optional.of(targetNameToken.trim());
+		}
+		
+		if (commandArguments.length == 2) {
+			String ordinalToken = commandArguments[1];
+			if (!StringUtils.hasText(ordinalToken)) {
+				throw new InvalidCommandException(INVALID_COMMAND_LOOK_USAGE);
+			}
+			
+			try {
+				int ordinalValue = Integer.parseInt(ordinalToken.trim());
+				if (ordinalValue <= 0) {
+					throw new InvalidCommandException(INVALID_COMMAND_LOOK_USAGE);
+				}
+				targetOrdinalMaybe = Optional.of(ordinalValue);
+			} catch (NumberFormatException ex) {
+				throw new InvalidCommandException(INVALID_COMMAND_LOOK_USAGE, ex);
+			}
+		}
+		
+		return new LookCommand(rawText, commandingPlayerId, targetNameMaybe, targetOrdinalMaybe);
+	}
+
+	private IncomingCommand createPlayerManagementCommand(Optional<UUID> commandingPlayerIdMaybe, String rawText, String[] commandArgs, SystemCommandType type)
+			throws InvalidCommandException {
 		if (commandArgs.length == 0 || !StringUtils.hasText(commandArgs[0])) {
 			return unknownCommand(rawText);
 		}
@@ -90,7 +145,9 @@ public class IncomingTextCommandParserUtil {
 		
 		return switch (type) {
 		case LOGIN -> new LoginCommand(rawText, sanitizedPlayerName);
-		case LOGOUT -> new LogoutCommand(rawText, sanitizedPlayerName);
+		case LOGOUT -> commandingPlayerIdMaybe
+				.map(playerId -> new LogoutCommand(rawText, sanitizedPlayerName, playerId))
+				.orElseThrow(() -> new InvalidCommandException(INVALID_COMMAND_MUST_BE_LOGGED_IN));
 		case REGISTER -> new RegisterCharacterCommand(rawText, sanitizedPlayerName);
 		};
 	}
@@ -98,12 +155,17 @@ public class IncomingTextCommandParserUtil {
 	/**
 	 * Parse into an unknown command, so we can log the raw text for the error message.
 	 */
-	private IncomingCommand createMovementCommand(String rawCommandText, String directionToken) {
+	private IncomingCommand createMovementCommand(Optional<UUID> commandingPlayerId, String rawCommandText, String directionToken) {
+		if (commandingPlayerId.isEmpty()) {
+			log.debug("Cannot create movement command, player id missing. Raw command text: {}", rawCommandText);
+			return unknownCommand(rawCommandText);
+		}
+		
 		var direction = MovementDirectionMapper.fromToken(directionToken);
 		if (direction == null) {
 			return unknownCommand(rawCommandText);
 		}
-		return new MoveCharacterCommand(rawCommandText, null, direction);
+		return new MoveCharacterCommand(rawCommandText, commandingPlayerId.get(), direction);
 	}
 
 	private IncomingCommand unknownCommand(String rawCommandText) {
@@ -115,7 +177,15 @@ public class IncomingTextCommandParserUtil {
 		};
 	}
 	
-	private enum CommandType {
+    /* ********************************************************
+     * 	                    Deferred Methods
+     * ********************************************************/
+	
+    /* ********************************************************
+     * 	                    Static Members
+     * ********************************************************/
+	
+	private enum SystemCommandType {
 		LOGIN,
 		LOGOUT,
 		REGISTER
@@ -150,7 +220,5 @@ public class IncomingTextCommandParserUtil {
 		}
 	}
 	
-    /* ********************************************************
-     * 	                    Deferred Methods
-     * ********************************************************/
+
 }

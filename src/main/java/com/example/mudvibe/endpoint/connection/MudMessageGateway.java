@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
+import com.example.mudvibe.common.exception.InvalidCommandException;
+import com.example.mudvibe.common.exception.UnknownCommandException;
 import com.example.mudvibe.common.interfaces.service.message.IncomingCommandQueueService;
 import com.example.mudvibe.common.interfaces.service.message.OutboundMessagePublisher;
 import com.example.mudvibe.common.interfaces.service.session.SessionManagerService;
@@ -64,23 +66,40 @@ public class MudMessageGateway implements OutboundMessagePublisher {
 		var echo = new EchoMessage(messagePayload);
 		sendTo(session, echo);
 	
-		var result = commandParser.parseCommand(messagePayload);
-    	if (result.isValid()) {
-    		routeCommand(session, result.parsedCommand());
-    	} else {
-    		var errorMessage = new SystemErrorMessage("Invalid command: " + messagePayload);
-    		sendTo(session, errorMessage );
-    	}	
-	}
+		Optional<UUID> commandingPlayerIdMaybe = sessionManager.findPlayerIdBySession(session);
+		Optional<? extends OutboundMessage> responseMaybe = Optional.empty(); //follow-up result to send, if any.
 
+		try {
+			var parsedCommandResult = commandParser.parseCommand(messagePayload, commandingPlayerIdMaybe);
+			responseMaybe = (parsedCommandResult.isValid())
+					?  routeCommand(session, parsedCommandResult.parsedCommand())
+					:  Optional.of(new SystemErrorMessage("Invalid command: " + messagePayload));
+		} catch (InvalidCommandException | UnknownCommandException ex) {
+			log.trace("Command was not valid: ", ex);	//this will probably happen a lot, so no need to log higher than trace.
+			responseMaybe = Optional.of(new SystemErrorMessage("Command was not valid: " + ex.getMessage()));
+		} catch (Exception ex) {
+			log.error("An exception occurred processing a command: {}", ex.toString());
+			log.trace("Command processing stack trace", ex);
+			responseMaybe = Optional.of(new SystemErrorMessage("An error occured parsing command: " + messagePayload));
+		}
+    	
+    	responseMaybe.ifPresent(message -> sendTo(session, message));
+	}
 
 	public void deliverOutBoundMessage(AddressedOutboundMessage addressedOutboundMessage) {
 		UUID playerId = addressedOutboundMessage.recipientPlayerId();
 	
-		findWebsocketSessionForPlayer(playerId).ifPresentOrElse(
-				session -> sendTo(session, addressedOutboundMessage), 
-				() -> log.warn("Skipping message transmission: Could not find an available session for player with id {}", playerId)
-			);
+		try {
+			findWebsocketSessionForPlayer(playerId).ifPresentOrElse(
+					session -> sendTo(session, addressedOutboundMessage), 
+					() -> log.warn("Skipping message transmission: Could not find an available session for player with id {}", playerId)
+				);
+		} catch (Exception ex) {
+			//prevent an exception from killing whatever process is going on. Log the exception, though.
+			log.error("Could not send an addressed message to a player due to an exception: {}", ex.getLocalizedMessage());
+			log.trace("Stack trace: ", ex);
+		}
+
 	}
 
 	public void sendSystemBroadcast(SystemBroadcastMessage broadcastMessage) {
@@ -97,15 +116,13 @@ public class MudMessageGateway implements OutboundMessagePublisher {
 	 * Route commands to where they need to go to be processed.
 	 * Simple results or error messages may be returned. Complex updates, e.g. from character actions, will need to be routed.
 	 */
-	private void routeCommand(WebSocketSession session, IncomingCommand command) {
+	private Optional<SimpleOutboundMessage> routeCommand(WebSocketSession session, IncomingCommand command) {
 		
-		Optional<SimpleOutboundMessage> result = switch (command) {
+		return switch (command) {
 			case IncomingPlayerManagementCommand ipmc -> sessionManager.handleCharacterManagementCommand(session, ipmc);
 			case IncomingCharacterCommand icc-> commandQueue.enqueueCommand(icc);
 			case null, default -> Optional.of(new SystemErrorMessage("Unrecognized command: " + command.rawCommandText()));
 		};
-		
-		result.ifPresent(message -> sendTo(session, message));
 	}
 	
 	private void sendTo(WebSocketSession session, OutboundMessage message) {

@@ -1,4 +1,4 @@
-package com.example.mudvibe.service.player;
+package com.example.mudvibe.repository.player;
 
 import java.util.UUID;
 

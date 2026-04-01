@@ -1,4 +1,4 @@
-package com.example.mudvibe.logic;
+package com.example.mudvibe.service.gameworld;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
