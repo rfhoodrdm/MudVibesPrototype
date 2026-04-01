@@ -9,13 +9,14 @@ import org.springframework.stereotype.Component;
 import com.example.mudvibe.common.exception.CommandProcessingException;
 import com.example.mudvibe.common.interfaces.service.message.IncomingCommandQueueService;
 import com.example.mudvibe.common.interfaces.service.message.OutboundMessagePublisher;
-import com.example.mudvibe.data.gamestate.GameWorldState;
+import com.example.mudvibe.common.interfaces.service.player.PlayerManagerService;
 import com.example.mudvibe.data.messages.inbound.IncomingCommand;
 import com.example.mudvibe.data.messages.inbound.character.IncomingCharacterCommand;
 import com.example.mudvibe.data.messages.inbound.character.LookCommand;
 import com.example.mudvibe.data.messages.inbound.character.MoveCharacterCommand;
 import com.example.mudvibe.data.messages.outbound.AddressedOutboundMessage;
 import com.example.mudvibe.data.messages.outbound.CommandProcessingErrorMessage;
+import com.example.mudvibe.service.area.AreaManagerService;
 import com.example.mudvibe.service.gameworld.commandelegate.LookCommandProcessingDelegate;
 import com.example.mudvibe.service.gameworld.commandelegate.MoveCharacterCommandProcessingDelegate;
 import com.example.mudvibe.util.system.SystemClockUtil;
@@ -28,10 +29,12 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class GameWorldLogic {
 
-	private final GameWorldState state;
 	private final SystemClockUtil clockUtil;
 	private final IncomingCommandQueueService incomingCommandQueue;
 	private final OutboundMessagePublisher messagePublisher;
+
+	private final PlayerManagerService playerManagerService;
+	private final AreaManagerService areaManagerService;
 	
     /* ********************************************************
      * 					    Public Methods
@@ -65,7 +68,6 @@ public class GameWorldLogic {
 		}
 	}
 
-
     /* ********************************************************
      * 					    Helper Methods
      * ********************************************************/
@@ -73,8 +75,8 @@ public class GameWorldLogic {
 	private void processCharacterCommand(IncomingCharacterCommand icc) throws CommandProcessingException {
 		
 		List<AddressedOutboundMessage> outboundMessageResultList = switch (icc) {
-		case LookCommand lc 				-> LookCommandProcessingDelegate.processCommand(lc, state);
-		case MoveCharacterCommand mcc 		-> MoveCharacterCommandProcessingDelegate.processCommand(mcc, state);
+		case LookCommand lc 				-> LookCommandProcessingDelegate.processCommand(lc, playerManagerService, areaManagerService);
+		case MoveCharacterCommand mcc 		-> MoveCharacterCommandProcessingDelegate.processCommand(mcc, playerManagerService, areaManagerService);
 		};
 		
 		outboundMessageResultList.stream().forEach(message -> messagePublisher.deliverOutBoundMessage(message));

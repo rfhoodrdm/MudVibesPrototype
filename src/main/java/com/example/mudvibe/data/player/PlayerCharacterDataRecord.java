@@ -2,8 +2,6 @@ package com.example.mudvibe.data.player;
 
 import java.util.UUID;
 
-import com.example.mudvibe.common.interfaces.data.player.PlayerCharacterData;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -14,14 +12,17 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "character_data_record")
-public class PlayerCharacterDataRecord implements PlayerCharacterData {
+@Table(name = "player_character_data_record")
+public class PlayerCharacterDataRecord  {
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	@Column(name = "character_id")
 	private UUID characterId;
 	
-	@Column(name = "player_name", unique = true)
+	@Column(name = "player_name", unique = true, nullable = false)
 	private String playerName;
+	
+	@Column(name = "location_id", nullable = false)
+	private Long locationId = 0L;
 }
