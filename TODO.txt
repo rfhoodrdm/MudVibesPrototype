@@ -1,0 +1,4 @@
+
+-- Add a default look command on behalf of the user when logging in with a character.
+-- Add a message announcing the character's arrival to others in the same room on login.
+-- 

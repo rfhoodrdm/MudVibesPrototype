@@ -1,5 +1,6 @@
 package com.example.mudvibe.data.player;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -13,16 +14,24 @@ import lombok.Data;
 @Data
 @Entity
 @Table(name = "player_character_data_record")
-public class PlayerCharacterDataRecord  {
+public class PlayerCharacterDataRecord  implements PlayerCharacterData {
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	@Column(name = "character_id")
 	private UUID characterId;
 	
-	@Column(name = "player_name", unique = true, nullable = false)
-	private String playerName;
+	@Column(name = "player_id", nullable = false)
+	private UUID playerId;
+	
+	@Column(name = "character_name", unique = true, nullable = false)
+	private String characterName;
 	
 	@Column(name = "location_id", nullable = false)
-	private Long locationId = 0L;
+	private Long locationId;	
+	
+	@Column(name = "created_on", nullable = false, updatable = false)
+	private Instant createdOn;
+
+
 }

@@ -2,9 +2,11 @@ package com.example.mudvibe.data.messages.outbound;
 
 import java.util.UUID;
 
-public sealed interface AddressedOutboundMessage extends OutboundMessage 
-	permits AddressedSystemNotificationMessage, CommandProcessingErrorMessage,
-	RoomDescriptionMessage {
+import com.example.mudvibe.data.messages.outbound.interfaces.HasPlayerIdRecipient;
+
+public sealed interface AddressedOutboundMessage extends OutboundMessage, HasPlayerIdRecipient
+	permits AddressedSystemNotificationMessage, CommandProcessingErrorMessage, AddressedEchoMessage, AddressedSystemErrorMessage, 
+		RoomDescriptionMessage {
 
 	public UUID recipientPlayerId();
 }
