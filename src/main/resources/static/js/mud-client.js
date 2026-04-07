@@ -2,6 +2,8 @@ const outputEl = document.getElementById('game-output');
 const inputEl = document.getElementById('player-input');
 const submitBtn = document.getElementById('submit-btn');
 const statusEl = document.getElementById('connection-status');
+const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
 
 let socket;
 const MAX_OUTPUT_LINES = 400;
@@ -53,18 +55,16 @@ const connect = () => {
     socket = new WebSocket(url);
 
     socket.addEventListener('open', () => {
-        setConnectionState('Connected to server');
-        submitBtn.disabled = false;
+        setConnectionState('Receiving live updates');
     });
 
     socket.addEventListener('close', () => {
-        setConnectionState('Disconnected. Reconnecting…');
-        submitBtn.disabled = true;
+        setConnectionState('Reconnecting for live updates…');
         setTimeout(connect, 1500);
     });
 
     socket.addEventListener('error', () => {
-        setConnectionState('Connection error, retrying…');
+        setConnectionState('Update stream errored, retrying…');
     });
 
     socket.addEventListener('message', (event) => {
@@ -72,18 +72,31 @@ const connect = () => {
     });
 };
 
-const sendInput = () => {
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-        appendLines('[system] Cannot send command while disconnected.');
-        return;
-    }
+const sendInput = async () => {
     const text = inputEl.value.trim();
     if (!text.length) {
         appendLines('[client] Please type a command.');
         return;
     }
-    socket.send(text);
-    inputEl.value = '';
+
+    const headers = {'Content-Type': 'text/plain'};
+    if (csrfToken && csrfHeader) {
+        headers[csrfHeader] = csrfToken;
+    }
+
+    try {
+        const response = await fetch('/api/commands', {
+            method: 'POST',
+            headers,
+            body: text
+        });
+
+        if (response.ok) {
+            inputEl.value = '';
+        }
+    } catch (error) {
+        appendLines('[system] Unable to send command.');
+    }
 };
 
 submitBtn.addEventListener('click', sendInput);

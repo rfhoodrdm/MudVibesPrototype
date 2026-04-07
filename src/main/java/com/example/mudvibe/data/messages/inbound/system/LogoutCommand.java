@@ -5,11 +5,11 @@ import java.util.UUID;
 
 import com.example.mudvibe.common.exception.InvalidCommandException;
 
-public record LogoutCommand(String rawCommandText, String playerName, UUID commandingPlayerId) implements IncomingPlayerManagementCommand {
+public record LogoutCommand(String rawCommandText, UUID commandingPlayerId, String characterName ) implements IncomingCharacterManagementCommand {
 	
 	public LogoutCommand {
 		Objects.requireNonNull(rawCommandText, "Raw command text may not be null.");
 		Objects.requireNonNull(commandingPlayerId, "Player Id may not be null.");
-		Objects.requireNonNull(playerName, "Player Name may not be null.");
+		Objects.requireNonNull(characterName, "Character Name may not be null.");
 	}
 }

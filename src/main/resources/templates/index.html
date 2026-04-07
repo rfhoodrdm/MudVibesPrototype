@@ -3,23 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MudVibes Prototype</title>
+    <title>MudVibes</title>
     <link rel="stylesheet" th:href="@{/css/mud.css}">
 </head>
 <body>
 <header>
-    <h1>MudVibes Prototype</h1>
-    <p class="status-bar" id="connection-status">Connecting…</p>
+    <h1>Welcome to MudVibes</h1>
+    <p>Prototype multi-user dungeon running on Spring Boot.</p>
 </header>
 <main>
-    <div class="output-wrapper">
-        <textarea id="game-output" aria-live="polite" readonly></textarea>
-    </div>
-    <div class="input-row">
-        <textarea id="player-input" rows="2" placeholder="Enter your command here"></textarea>
-        <button id="submit-btn">SUBMIT</button>
-    </div>
+    <section>
+        <p>This is the landing page. From here you can explore game rules or jump into the client.</p>
+        <nav>
+            <ul>
+                <li><a th:href="@{/rules}">Rules &amp; Info</a></li>
+                <li><a th:href="@{/client}">Launch Client</a></li>
+            </ul>
+        </nav>
+    </section>
 </main>
-<script th:src="@{/js/mud-client.js}" defer></script>
 </body>
 </html>

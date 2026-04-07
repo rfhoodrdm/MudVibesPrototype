@@ -13,7 +13,7 @@ public class Room {
 
 	@Id
 	@Column(name = "location_id")
-	private Long locationId;
+	private long locationId;
 	
 	@Column(name = "title")
 	private String title;

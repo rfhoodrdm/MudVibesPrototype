@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MudVibes Prototype</title>
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <link rel="stylesheet" th:href="@{/css/mud.css}">
+</head>
+<body>
+<header>
+    <h1>MudVibes Prototype</h1>
+    <p class="status-bar" id="connection-status">Connecting…</p>
+</header>
+<main>
+    <div class="output-wrapper">
+        <textarea id="game-output" aria-live="polite" readonly></textarea>
+    </div>
+    <div class="input-row">
+        <textarea id="player-input" rows="2" placeholder="Enter your command here"></textarea>
+        <button id="submit-btn">SUBMIT</button>
+    </div>
+</main>
+<script th:src="@{/js/mud-client.js}" defer></script>
+</body>
+</html>
