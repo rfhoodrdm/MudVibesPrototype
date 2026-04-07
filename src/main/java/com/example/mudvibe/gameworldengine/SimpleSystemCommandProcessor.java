@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import com.example.mudvibe.area.AreaManager;
+import com.example.mudvibe.area.service.AreaManager;
 import com.example.mudvibe.commandqueue.IncomingSystemCommandQueue;
 import com.example.mudvibe.common.exception.CommandProcessingException;
 import com.example.mudvibe.data.messages.inbound.interfaces.HasCommandingPlayerId;
@@ -17,9 +17,9 @@ import com.example.mudvibe.data.messages.inbound.system.RegisterCharacterCommand
 import com.example.mudvibe.data.messages.outbound.AddressedOutboundMessage;
 import com.example.mudvibe.data.messages.outbound.CommandProcessingErrorMessage;
 import com.example.mudvibe.gameworldengine.clock.GameTickSubscriber;
-import com.example.mudvibe.gameworldengine.commanddelegate.LoginCommandProcessingDelegate;
-import com.example.mudvibe.gameworldengine.commanddelegate.LogoutCommandProcessingDelegate;
-import com.example.mudvibe.gameworldengine.commanddelegate.RegisterCharacterCommandProcessingDelegate;
+import com.example.mudvibe.gameworldengine.delegates.command.LoginCommandProcessingDelegate;
+import com.example.mudvibe.gameworldengine.delegates.command.LogoutCommandProcessingDelegate;
+import com.example.mudvibe.gameworldengine.delegates.command.RegisterCharacterCommandProcessingDelegate;
 import com.example.mudvibe.playercharacter.service.PlayerCharacterManager;
 import com.example.mudvibe.transport.outbound.messagepublisher.OutboundMessagePublisher;
 import com.example.mudvibe.util.system.SystemClockUtil;
@@ -83,9 +83,9 @@ public class SimpleSystemCommandProcessor implements GameTickSubscriber {
 	private void processCharacterCommand(IncomingSystemCommand isc) throws CommandProcessingException {
 		
 		List<AddressedOutboundMessage> outboundMessageResultList = switch (isc) {
-		case LoginCommand lic 				-> loginCommandProcessingDelegate.processCommand(lic, characterManager, areaManager);
-		case LogoutCommand loc				-> logoutCommandProcessingDelegate.processCommand(loc, characterManager, areaManager);
-		case RegisterCharacterCommand rcc 	-> registerCharacterCommandProcessingDelegate.processCommand(rcc, characterManager, areaManager);
+		case LoginCommand lic 				-> loginCommandProcessingDelegate.processCommand(lic);
+		case LogoutCommand loc				-> logoutCommandProcessingDelegate.processCommand(loc);
+		case RegisterCharacterCommand rcc 	-> registerCharacterCommandProcessingDelegate.processCommand(rcc);
 		};
 		
 		outboundMessageResultList.stream().forEach(message -> messagePublisher.sendAddressedMessage(message));

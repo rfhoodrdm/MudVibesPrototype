@@ -1,10 +1,11 @@
-package com.example.mudvibe.area;
+package com.example.mudvibe.area.service;
 
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
-import com.example.mudvibe.data.area.Room;
+import com.example.mudvibe.common.enums.MovementDirection;
+import com.example.mudvibe.data.area.RoomRecord;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +23,9 @@ public class SimpleAreaManager implements AreaManager {
      * ********************************************************/
 	
 	@Override
-	public Room findRoomByLocationId(Optional<Long> locationIdMaybe) {
+	public RoomRecord findRoomByLocationId(Long locationId) {
+		long actualLocationId = Optional.ofNullable(locationId)
+				.orElse(NOWHERE_LOCATION_ID);
 		return noWhere();	//TODO implement actual lookup.
 	}
 	
@@ -35,8 +38,8 @@ public class SimpleAreaManager implements AreaManager {
      * 					    Helper Methods
      * ********************************************************/
 	
-	private Room noWhere() {
-		Room nowhere = new Room();
+	private RoomRecord noWhere() {
+		RoomRecord nowhere = new RoomRecord();
 		
 		String roomTitle = "Nowhere";
 		String roomDescription = "You stand within a hollow dome made of apparently transparent force, you look overhead and behold a sea of stars floating against a sea of blackness, an almost incomprehensible distance from where you are. It is neither hot nor cold here, and time seems to have left this place forgotten and untouched for uncounted ages.";
@@ -44,6 +47,8 @@ public class SimpleAreaManager implements AreaManager {
 		nowhere.setTitle(roomTitle);
 		nowhere.setDescription(roomDescription);
 		nowhere.setLocationId(NOWHERE_LOCATION_ID);
+		
+		nowhere.addDirectionalExit(01L, MovementDirection.DOWN);
 		
 		return nowhere;
 	}

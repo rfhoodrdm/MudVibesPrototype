@@ -1,34 +1,40 @@
-package com.example.mudvibe.gameworldengine.commanddelegate;
+package com.example.mudvibe.gameworldengine.delegates.command;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
-import com.example.mudvibe.area.AreaManager;
+import com.example.mudvibe.area.service.AreaManager;
 import com.example.mudvibe.common.exception.CommandProcessingException;
 import com.example.mudvibe.common.exception.PlayerCharacterRegistrationException;
-import com.example.mudvibe.data.area.Room;
+import com.example.mudvibe.data.area.RoomData;
 import com.example.mudvibe.data.messages.inbound.system.RegisterCharacterCommand;
 import com.example.mudvibe.data.messages.outbound.AddressedOutboundMessage;
 import com.example.mudvibe.data.messages.outbound.RoomDescriptionMessage;
 import com.example.mudvibe.data.player.PlayerCharacterData;
+import com.example.mudvibe.gameworldengine.delegates.response.RoomDescriptionResponseDelegate;
 import com.example.mudvibe.playercharacter.service.PlayerCharacterManager;
 
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 @Component
-public class RegisterCharacterCommandProcessingDelegate implements CommandProcessingDelegate<RegisterCharacterCommand> {
+@Slf4j
+@RequiredArgsConstructor
+public class RegisterCharacterCommandProcessingDelegate extends CommandProcessingDelegate<RegisterCharacterCommand> {
 	
 	@Override
-	public List<AddressedOutboundMessage> processCommand (RegisterCharacterCommand rcc,
-			PlayerCharacterManager playerCharacterManager, 
-			AreaManager areaManager) throws CommandProcessingException {
+	public List<AddressedOutboundMessage> processCommand (RegisterCharacterCommand rcc) 
+			throws CommandProcessingException {
 		
 		try {
 			PlayerCharacterData pcData = playerCharacterManager.registerPlayerCharacter(rcc.commandingPlayerId(), rcc.characterName());
 			
-			Room room = areaManager.findRoomByLocationId(Optional.of(pcData.getLocationId()));
-			RoomDescriptionMessage currentRoomDescription = LookCommandProcessingDelegate.constructRoomDescriptionMessage(pcData.getPlayerId(), room);
+			Long location = pcData.getLocationId();
+			RoomData room = areaManager.findRoomByLocationId(location);
 			
+			RoomDescriptionMessage currentRoomDescription = roomDescriptionResponseDelegate.constructRoomDescriptionMessage(pcData.getPlayerId(), room);
 			return List.of(currentRoomDescription);
 		} catch (PlayerCharacterRegistrationException ex) {
 			throw new CommandProcessingException("Unable to register character: " + ex.getMessage(), ex);
