@@ -20,6 +20,9 @@ public class WebSecurityConfig {
             )
             .oauth2Login(Customizer.withDefaults())
             .logout(Customizer.withDefaults());
+        http
+            .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"))
+            .headers(headers -> headers.frameOptions(frame -> frame.disable()));
         return http.build();
     }
 }
