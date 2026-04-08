@@ -37,11 +37,9 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 	private final PlayerCharacterStorage playerCharacterStorage;
 	private final SystemClockUtil clockUtil;
 	
-	private final Map<UUID, PlayerCharacterData> activePlayerCharacterMap = new ConcurrentHashMap<>();	//player Id to character data mapping.
-	private final Map<String, PlayerCharacterData> currentlyActivePlayerMap = new ConcurrentHashMap<>();	//character name to character data mapping.
-	private final Map<Long, Set<PlayerCharacterData>> activePlayersByLocation = new ConcurrentHashMap<>();
-	
-	//locationId to mapping of characters in that location.
+	private final Map<UUID, PlayerCharacterData> activePlayerCharacterMap = new ConcurrentHashMap<>();	     //player Id to character data mapping.
+	private final Map<String, PlayerCharacterData> currentlyActivePlayerMap = new ConcurrentHashMap<>();	 //character name to character data mapping.
+	private final Map<Long, Set<PlayerCharacterData>> activePlayersByLocation = new ConcurrentHashMap<>();   //locationId to mapping of characters in that location.
 	
     /* ********************************************************
      * 					    Public Methods
@@ -256,7 +254,7 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 		if (characterData instanceof PlayerCharacterDataRecord record) {
 			record.setLocationId(newLocationId);
 		} else {
-			throw new CharacterMoveException("Unable to update location for character.");
+			throw new CharacterMoveException("Unable to update location for character. Character data provided is not mutable.");
 		}
 	}
 	

@@ -4,7 +4,10 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import com.example.mudvibe.area.repository.AreaRepository;
+import com.example.mudvibe.area.repository.RoomRepository;
 import com.example.mudvibe.common.enums.MovementDirection;
+import com.example.mudvibe.data.area.RoomData;
 import com.example.mudvibe.data.area.RoomRecord;
 
 import lombok.RequiredArgsConstructor;
@@ -17,16 +20,25 @@ public class SimpleAreaManager implements AreaManager {
 	
 	public static final long NOWHERE_LOCATION_ID = 0;
 	
+	private final AreaRepository areaRepository;
+	private final RoomRepository roomRepository;
+	
 	
     /* ********************************************************
      * 					    Public Methods
      * ********************************************************/
 	
 	@Override
-	public RoomRecord findRoomByLocationId(Long locationId) {
-		long actualLocationId = Optional.ofNullable(locationId)
+	public RoomData findRoomByLocationId(Long locationId) {
+		long effectiveLocationId = Optional.ofNullable(locationId)
 				.orElse(NOWHERE_LOCATION_ID);
-		return noWhere();	//TODO implement actual lookup.
+		log.debug("Fetching room by location id: {}    Effective location id: {}", 
+				locationId, effectiveLocationId);
+		
+		RoomData roomData = roomRepository.findById(effectiveLocationId)
+			.orElse(noWhere());
+		log.debug("Returning roomData with location id: {}", roomData.getLocationId());
+		return roomData;
 	}
 	
 	@Override
