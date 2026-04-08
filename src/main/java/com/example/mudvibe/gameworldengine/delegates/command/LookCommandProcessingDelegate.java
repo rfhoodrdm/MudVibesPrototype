@@ -22,8 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RequiredArgsConstructor
 public class LookCommandProcessingDelegate extends CommandProcessingDelegate<LookCommand> {
-	
-	private final RoomDescriptionResponseDelegate roomDescriptionResponseDelegate;
 
 	@Override
 	public List<AddressedOutboundMessage> processCommand(LookCommand lc) throws CommandProcessingException {

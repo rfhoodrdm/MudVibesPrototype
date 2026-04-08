@@ -23,8 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class LoginCommandProcessingDelegate extends CommandProcessingDelegate<LoginCommand> {
 	
-	private final RoomDescriptionResponseDelegate roomDescriptionResponseDelegate;
-
 	@Override
 	public List<AddressedOutboundMessage> processCommand(LoginCommand lic) throws CommandProcessingException {
 		
