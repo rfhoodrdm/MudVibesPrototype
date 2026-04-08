@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
-import com.example.mudvibe.area.AreaManager;
+import com.example.mudvibe.area.service.AreaManager;
 import com.example.mudvibe.commandqueue.IncomingCharacterCommandQueue;
 import com.example.mudvibe.common.exception.CommandProcessingException;
 import com.example.mudvibe.data.messages.inbound.character.IncomingCharacterCommand;
@@ -15,8 +15,8 @@ import com.example.mudvibe.data.messages.inbound.character.MoveCharacterCommand;
 import com.example.mudvibe.data.messages.outbound.AddressedOutboundMessage;
 import com.example.mudvibe.data.messages.outbound.CommandProcessingErrorMessage;
 import com.example.mudvibe.gameworldengine.clock.GameTickSubscriber;
-import com.example.mudvibe.gameworldengine.commanddelegate.LookCommandProcessingDelegate;
-import com.example.mudvibe.gameworldengine.commanddelegate.MoveCharacterCommandProcessingDelegate;
+import com.example.mudvibe.gameworldengine.delegates.command.LookCommandProcessingDelegate;
+import com.example.mudvibe.gameworldengine.delegates.command.MoveCharacterCommandProcessingDelegate;
 import com.example.mudvibe.playercharacter.service.PlayerCharacterManager;
 import com.example.mudvibe.transport.outbound.messagepublisher.OutboundMessagePublisher;
 import com.example.mudvibe.util.system.SystemClockUtil;
@@ -74,8 +74,8 @@ public class GameWorldLogic implements GameTickSubscriber {
 	private void processCharacterCommand(IncomingCharacterCommand icc) throws CommandProcessingException {
 		
 		List<AddressedOutboundMessage> outboundMessageResultList = switch (icc) {
-		case LookCommand lc 				-> lookCommandProcessingDelegate.processCommand(lc, playerCharacterManager, areaManager);
-		case MoveCharacterCommand mcc 		-> moveCharacterCommandProcessingDelegate.processCommand(mcc, playerCharacterManager, areaManager);
+		case LookCommand lc 				-> lookCommandProcessingDelegate.processCommand(lc);
+		case MoveCharacterCommand mcc 		-> moveCharacterCommandProcessingDelegate.processCommand(mcc);
 		};
 		
 		outboundMessageResultList.stream().forEach(message -> messagePublisher.sendAddressedMessage(message));

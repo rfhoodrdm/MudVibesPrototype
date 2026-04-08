@@ -1,16 +1,22 @@
 package com.example.mudvibe.playercharacter.service;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentHashMap.KeySetView;
 
 import org.springframework.stereotype.Service;
 
-import com.example.mudvibe.area.AreaManager;
+import com.example.mudvibe.area.service.AreaManager;
 import com.example.mudvibe.common.exception.CharacterLoginException;
 import com.example.mudvibe.common.exception.CharacterLogoutException;
+import com.example.mudvibe.common.exception.CharacterMoveException;
 import com.example.mudvibe.common.exception.PlayerCharacterLoadDataException;
 import com.example.mudvibe.common.exception.PlayerCharacterRegistrationException;
 import com.example.mudvibe.common.exception.PlayerCharacterSaveDataException;
@@ -31,8 +37,11 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 	private final PlayerCharacterStorage playerCharacterStorage;
 	private final SystemClockUtil clockUtil;
 	
-	private final Map<UUID, PlayerCharacterData> activePlayerCharacterMap = new ConcurrentHashMap<>();
-	private final Map<String, PlayerCharacterData> currentlyActivePlayerMap = new ConcurrentHashMap<>();
+	private final Map<UUID, PlayerCharacterData> activePlayerCharacterMap = new ConcurrentHashMap<>();	//player Id to character data mapping.
+	private final Map<String, PlayerCharacterData> currentlyActivePlayerMap = new ConcurrentHashMap<>();	//character name to character data mapping.
+	private final Map<Long, Set<PlayerCharacterData>> activePlayersByLocation = new ConcurrentHashMap<>();
+	
+	//locationId to mapping of characters in that location.
 	
     /* ********************************************************
      * 					    Public Methods
@@ -71,6 +80,7 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 		}
 		
 		removeCharacterFromNameMap(removedCharacter);
+		removeCharacterFromLocationMap(removedCharacter);
 		saveCharacterData(removedCharacter);
 		return Optional.of(removedCharacter);
 	}
@@ -93,6 +103,7 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 		if (removedCharacter.getPlayerId() != null) {
 			activePlayerCharacterMap.remove(removedCharacter.getPlayerId(), removedCharacter);
 		}
+		removeCharacterFromLocationMap(removedCharacter);
 		
 		try {
 			playerCharacterStorage.savePlayerCharacterData(removedCharacter);
@@ -110,33 +121,14 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 		}
 		return Optional.ofNullable(activePlayerCharacterMap.get(playerId));
 	}
-
+	
 	@Override
 	public PlayerCharacterData registerPlayerCharacter(UUID playerId, String characterName) throws PlayerCharacterRegistrationException {
 		log.debug("Inside registerPlayerCharacter(). Player id: {} Character name: {}", playerId, characterName);
-
-		//check to see if the player already has an entry in the mapping for a character. If so, then they cannot register a new character until logging out first.
-		if (activePlayerCharacterMap.containsKey(playerId)) {
-			throw new PlayerCharacterRegistrationException("Please logout before registering another character.");
-		}
+		String sanitizedName = CharacterNameNormalizationUtil.sanitize(characterName);
+		validateRegisterPlayerCharacter(playerId, sanitizedName);
 		
-		if (playerId == null) {
-			throw new PlayerCharacterRegistrationException("Player id is required to register.");
-		}
-
-		var sanitizedName = CharacterNameNormalizationUtil.sanitize(characterName);
-		if (sanitizedName == null) {
-			throw new PlayerCharacterRegistrationException("Character name is required.");
-		}
-
-		try {
-			playerCharacterStorage.loadPlayerCharacterDataByCharacterName(sanitizedName);
-			throw new PlayerCharacterRegistrationException("Character name already exists.");
-		} catch (PlayerCharacterLoadDataException ex) {
-			// indicates not found, safe to proceed
-		}
-
-		var newCharacterRecord = initializeNewPlayerCharacter(playerId, sanitizedName);
+		PlayerCharacterDataRecord newCharacterRecord = initializeNewPlayerCharacter(playerId, sanitizedName);
 
 		try {
 			PlayerCharacterData savedCharacter = playerCharacterStorage.savePlayerCharacterData(newCharacterRecord);
@@ -147,10 +139,60 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 		}
 	}
 
+	@Override
+	public List<PlayerCharacterData> getActivePlayerCharacterDataByLocation(Long locationId) {
+		if (locationId == null) {
+			return List.of();
+		}
+		return new ArrayList<>(activePlayersByLocation.getOrDefault(locationId, Collections.emptySet()));
+	}
+
+	@Override
+	public PlayerCharacterData movePlayerCharacter(PlayerCharacterData pcData, Long newLocationId) throws CharacterMoveException {
+		log.debug("Inside of movePlayerCharacter(). Olayer id: {}   Character id: {}    New location: {}", 
+				pcData.getPlayerId(), pcData.getCharacterId(), newLocationId);
+		if (pcData == null || newLocationId == null) {
+			throw new CharacterMoveException("Player data and destination location are required.");
+		}
+		
+		if( pcData instanceof PlayerCharacterDataRecord pcRecord) {
+			removeCharacterFromLocationMap(pcRecord);
+			updateCharacterLocation(pcRecord, newLocationId);
+			addCharacterToLocationMap(pcRecord);
+		} else {
+			log.warn("Couldn't perform player move; ocData was not a mutable plaeyr character record.");
+		}
+
+		return pcData;
+	}
 
     /* ********************************************************
      * 					    Helper Methods
      * ********************************************************/
+	
+	private void validateRegisterPlayerCharacter(UUID playerId, String sanitizedCharacterName) 
+			throws PlayerCharacterRegistrationException {
+		//check to see if the player already has an entry in the mapping for a character. If so, then they cannot register a new character until logging out first.
+		if (activePlayerCharacterMap.containsKey(playerId)) {
+			throw new PlayerCharacterRegistrationException("Please logout before registering another character.");
+		}
+		
+		if (playerId == null) {
+			throw new PlayerCharacterRegistrationException("Player id is required to register.");
+		}
+
+		if (sanitizedCharacterName == null) {
+			throw new PlayerCharacterRegistrationException("Character name is required.");
+		}
+
+		try {
+			playerCharacterStorage.loadPlayerCharacterDataByCharacterName(sanitizedCharacterName);
+			throw new PlayerCharacterRegistrationException("Character name already exists: " + sanitizedCharacterName);
+		} catch (PlayerCharacterLoadDataException ex) {
+			// indicates not found, safe to proceed
+		}
+	}
+	
 	private PlayerCharacterData loadCharacterData(String characterName) throws CharacterLoginException {
 		try {
 			return playerCharacterStorage.loadPlayerCharacterDataByCharacterName(characterName);
@@ -177,12 +219,44 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 		if (normalizedName != null) {
 			currentlyActivePlayerMap.put(normalizedName, characterData);
 		}
+		addCharacterToLocationMap(characterData);
 	}
 	
 	private void removeCharacterFromNameMap(PlayerCharacterData characterData) {
 		var normalizedName = CharacterNameNormalizationUtil.normalize(characterData.getCharacterName());
 		if (normalizedName != null) {
 			currentlyActivePlayerMap.remove(normalizedName, characterData);
+		}
+	}
+	
+	private void addCharacterToLocationMap(PlayerCharacterData characterData) {
+		if (characterData == null || characterData.getLocationId() == null) {
+			return;
+		}
+		activePlayersByLocation
+			.computeIfAbsent(characterData.getLocationId(), key -> ConcurrentHashMap.newKeySet())
+			.add(characterData);
+	}
+	
+	private void removeCharacterFromLocationMap(PlayerCharacterData characterData) {
+		if (characterData == null || characterData.getLocationId() == null) {
+			return;
+		}
+		Set<PlayerCharacterData> occupants = activePlayersByLocation.get(characterData.getLocationId());
+		if (occupants == null) {
+			return;
+		}
+		occupants.remove(characterData);
+		if (occupants.isEmpty()) {
+			activePlayersByLocation.remove(characterData.getLocationId(), occupants);
+		}
+	}
+	
+	private void updateCharacterLocation(PlayerCharacterData characterData, Long newLocationId) throws CharacterMoveException {
+		if (characterData instanceof PlayerCharacterDataRecord record) {
+			record.setLocationId(newLocationId);
+		} else {
+			throw new CharacterMoveException("Unable to update location for character.");
 		}
 	}
 	

@@ -33,5 +33,4 @@ public class PlayerCharacterDataRecord  implements PlayerCharacterData {
 	@Column(name = "created_on", nullable = false, updatable = false)
 	private Instant createdOn;
 
-
 }
