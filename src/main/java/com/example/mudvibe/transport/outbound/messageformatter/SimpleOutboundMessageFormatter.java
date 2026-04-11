@@ -11,6 +11,7 @@ import com.example.mudvibe.data.messages.outbound.GreetingMessage;
 import com.example.mudvibe.data.messages.outbound.OutboundMessage;
 import com.example.mudvibe.data.messages.outbound.RoomDescriptionMessage;
 import com.example.mudvibe.data.messages.outbound.SimpleSystemResponseMessage;
+import com.example.mudvibe.data.messages.outbound.SpeechDescriptionMessage;
 import com.example.mudvibe.data.messages.outbound.SystemBroadcastMessage;
 import com.example.mudvibe.data.messages.outbound.SystemErrorMessage;
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.AddressedEchoMessageFormatter;
@@ -21,6 +22,7 @@ import com.example.mudvibe.transport.outbound.messageformatter.formatters.EchoMe
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.GreetingMessageFormatter;
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.RoomDescriptionMessageFormatter;
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.SimpleSystemResponseMessageFormatter;
+import com.example.mudvibe.transport.outbound.messageformatter.formatters.SpeechDescriptionMessageFormatter;
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.SystemBroadcastMessageFormatter;
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.SystemErrorMessageFormatter;
 
@@ -52,6 +54,7 @@ public class SimpleOutboundMessageFormatter implements OutboundMessageFormatter 
 		case GreetingMessage gm                         -> GreetingMessageFormatter.format(gm);
 		case SimpleSystemResponseMessage ssrm			-> SimpleSystemResponseMessageFormatter.format(ssrm);
 		case CommandProcessingErrorMessage cpem			-> CommandProcessingErrorMessageFormatter.format(cpem);
+		case SpeechDescriptionMessage sdm               -> SpeechDescriptionMessageFormatter.format(sdm);
 		
 		//instances, for those requiring components to work.
 		case RoomDescriptionMessage rdm 				-> roomDescriptionMessageFormatter.format(rdm);

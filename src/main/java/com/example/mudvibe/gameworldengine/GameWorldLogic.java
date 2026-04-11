@@ -12,11 +12,13 @@ import com.example.mudvibe.common.exception.CommandProcessingException;
 import com.example.mudvibe.data.messages.inbound.character.IncomingCharacterCommand;
 import com.example.mudvibe.data.messages.inbound.character.LookCommand;
 import com.example.mudvibe.data.messages.inbound.character.MoveCharacterCommand;
+import com.example.mudvibe.data.messages.inbound.character.SpeechCommand;
 import com.example.mudvibe.data.messages.outbound.AddressedOutboundMessage;
 import com.example.mudvibe.data.messages.outbound.CommandProcessingErrorMessage;
 import com.example.mudvibe.gameworldengine.clock.GameTickSubscriber;
 import com.example.mudvibe.gameworldengine.delegates.command.LookCommandProcessingDelegate;
 import com.example.mudvibe.gameworldengine.delegates.command.MoveCharacterCommandProcessingDelegate;
+import com.example.mudvibe.gameworldengine.delegates.command.SpeechCommandProcessingDelegate;
 import com.example.mudvibe.playercharacter.service.PlayerCharacterManager;
 import com.example.mudvibe.transport.outbound.messagepublisher.OutboundMessagePublisher;
 import com.example.mudvibe.util.system.SystemClockUtil;
@@ -35,8 +37,10 @@ public class GameWorldLogic implements GameTickSubscriber {
 
 	private final PlayerCharacterManager playerCharacterManager;
 	private final AreaManager areaManager;
+	
 	private final LookCommandProcessingDelegate lookCommandProcessingDelegate;
 	private final MoveCharacterCommandProcessingDelegate moveCharacterCommandProcessingDelegate;
+	private final SpeechCommandProcessingDelegate speechCommandProcessingDelegate;
 	
     /* ********************************************************
      * 					    Public Methods
@@ -76,6 +80,7 @@ public class GameWorldLogic implements GameTickSubscriber {
 		List<AddressedOutboundMessage> outboundMessageResultList = switch (icc) {
 		case LookCommand lc 				-> lookCommandProcessingDelegate.processCommand(lc);
 		case MoveCharacterCommand mcc 		-> moveCharacterCommandProcessingDelegate.processCommand(mcc);
+		case SpeechCommand sc 				-> speechCommandProcessingDelegate.processCommand(sc);
 		};
 		
 		outboundMessageResultList.stream().forEach(message -> messagePublisher.sendAddressedMessage(message));
