@@ -10,7 +10,7 @@ public record SpeechCommand(String rawCommandText, UUID commandingPlayerId, Spee
 	public SpeechCommand {
 		Objects.requireNonNull(rawCommandText, "rawCommandText may not be null.");
 		Objects.requireNonNull(commandingPlayerId, "commandingPlayerId may not be null.");
-		Objects.requireNonNull(speech, "speechMode may not be null.");
+		Objects.requireNonNull(speechMode, "speechMode may not be null.");
 		Objects.requireNonNull(speech, "speech may not be null.");
 	}
 }
