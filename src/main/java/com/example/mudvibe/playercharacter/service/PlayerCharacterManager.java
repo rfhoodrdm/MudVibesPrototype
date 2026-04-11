@@ -6,8 +6,8 @@ import java.util.UUID;
 
 import com.example.mudvibe.common.exception.CharacterLoginException;
 import com.example.mudvibe.common.exception.CharacterLogoutException;
-import com.example.mudvibe.common.exception.PlayerCharacterRegistrationException;
 import com.example.mudvibe.common.exception.CharacterMoveException;
+import com.example.mudvibe.common.exception.PlayerCharacterRegistrationException;
 import com.example.mudvibe.data.player.PlayerCharacterData;
 
 public interface PlayerCharacterManager {

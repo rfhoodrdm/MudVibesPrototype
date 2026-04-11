@@ -9,7 +9,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentHashMap.KeySetView;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.springframework.stereotype.Service;
 
@@ -40,6 +42,9 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 	private final Map<UUID, PlayerCharacterData> activePlayerCharacterMap = new ConcurrentHashMap<>();	     //player Id to character data mapping.
 	private final Map<String, PlayerCharacterData> currentlyActivePlayerMap = new ConcurrentHashMap<>();	 //character name to character data mapping.
 	private final Map<Long, Set<PlayerCharacterData>> activePlayersByLocation = new ConcurrentHashMap<>();   //locationId to mapping of characters in that location.
+	private final ReadWriteLock characterStateLock = new ReentrantReadWriteLock();
+	private final Lock readLock = characterStateLock.readLock();
+	private final Lock writeLock = characterStateLock.writeLock();
 	
     /* ********************************************************
      * 					    Public Methods
@@ -49,100 +54,130 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 	public PlayerCharacterData loginPlayerCharacter(UUID playerId, String characterName) throws CharacterLoginException {
 		log.debug("Inside loginPlayerCharacter(). Player id: {} Character name: {}", playerId, characterName);
 		
-		var sanitizedName = validateLoginPlayerCharacterRequest(playerId, characterName);
-		
-		PlayerCharacterData characterData = loadCharacterData(sanitizedName);
-		if (characterData == null) {
-			throw new CharacterLoginException("Character does not exist.");
+		writeLock.lock();
+		try {
+			var sanitizedName = validateLoginPlayerCharacterRequest(playerId, characterName);
+			
+			PlayerCharacterData characterData = loadCharacterData(sanitizedName);
+			if (characterData == null) {
+				throw new CharacterLoginException("Character does not exist.");
+			}
+			
+			if (characterData.getPlayerId() == null || !characterData.getPlayerId().equals(playerId)) {
+				throw new CharacterLoginException("Player does not own this character.");
+			}
+			
+			markCharacterActive(characterData);
+			return characterData;
+		} finally {
+			writeLock.unlock();
 		}
-		
-		if (characterData.getPlayerId() == null || !characterData.getPlayerId().equals(playerId)) {
-			throw new CharacterLoginException("Player does not own this character.");
-		}
-		
-		markCharacterActive(characterData);
-		return characterData;
 	}
 
 	@Override
 	public Optional<PlayerCharacterData> logoutPlayerCharacterByPlayerId(UUID playerId) throws CharacterLogoutException {
 		log.debug("Inside logoutPlayerCharacterByPlayerId(). Player id: {}", playerId);
 		
-		if (playerId == null) {
-			return Optional.empty();
+		writeLock.lock();
+		try {
+			if (playerId == null) {
+				return Optional.empty();
+			}
+			
+			PlayerCharacterData removedCharacter = activePlayerCharacterMap.remove(playerId);
+			if (removedCharacter == null) {
+				return Optional.empty();
+			}
+			
+			removeCharacterFromNameMap(removedCharacter);
+			removeCharacterFromLocationMap(removedCharacter);
+			saveCharacterData(removedCharacter);
+			return Optional.of(removedCharacter);
+		} finally {
+			writeLock.unlock();
 		}
-		
-		PlayerCharacterData removedCharacter = activePlayerCharacterMap.remove(playerId);
-		if (removedCharacter == null) {
-			return Optional.empty();
-		}
-		
-		removeCharacterFromNameMap(removedCharacter);
-		removeCharacterFromLocationMap(removedCharacter);
-		saveCharacterData(removedCharacter);
-		return Optional.of(removedCharacter);
 	}
 
 	@Override
 	public PlayerCharacterData logoutPlayerCharacterByCharacterName(String characterName) {
 		log.debug("Inside logoutPlayerCharacterByCharacterName(). Character name: {}", characterName);
 		
-		var sanitizedName = CharacterNameNormalizationUtil.sanitize(characterName);
-		if (sanitizedName == null) {
-			return null;
-		}
-		
-		var normalizedName = CharacterNameNormalizationUtil.normalize(sanitizedName);
-		PlayerCharacterData removedCharacter = currentlyActivePlayerMap.remove(normalizedName);
-		if (removedCharacter == null) {
-			return null;
-		}
-		
-		if (removedCharacter.getPlayerId() != null) {
-			activePlayerCharacterMap.remove(removedCharacter.getPlayerId(), removedCharacter);
-		}
-		removeCharacterFromLocationMap(removedCharacter);
-		
+		writeLock.lock();
 		try {
-			playerCharacterStorage.savePlayerCharacterData(removedCharacter);
-		} catch (PlayerCharacterSaveDataException ex) {
-			throw new IllegalStateException("Unable to persist character data during logout.", ex);
+			var sanitizedName = CharacterNameNormalizationUtil.sanitize(characterName);
+			if (sanitizedName == null) {
+				return null;
+			}
+			
+			var normalizedName = CharacterNameNormalizationUtil.normalize(sanitizedName);
+			PlayerCharacterData removedCharacter = currentlyActivePlayerMap.remove(normalizedName);
+			if (removedCharacter == null) {
+				return null;
+			}
+			
+			if (removedCharacter.getPlayerId() != null) {
+				activePlayerCharacterMap.remove(removedCharacter.getPlayerId(), removedCharacter);
+			}
+			removeCharacterFromLocationMap(removedCharacter);
+			
+			try {
+				playerCharacterStorage.savePlayerCharacterData(removedCharacter);
+			} catch (PlayerCharacterSaveDataException ex) {
+				throw new IllegalStateException("Unable to persist character data during logout.", ex);
+			}
+			
+			return removedCharacter;
+		} finally {
+			writeLock.unlock();
 		}
-		
-		return removedCharacter;
 	}
 
 	@Override
 	public Optional<PlayerCharacterData> getActivePlayerCharacterDataByPlayerId(UUID playerId) {
-		if (playerId == null) {
-			return Optional.empty();
+		readLock.lock();
+		try {
+			if (playerId == null) {
+				return Optional.empty();
+			}
+			return Optional.ofNullable(activePlayerCharacterMap.get(playerId));
+		} finally {
+			readLock.unlock();
 		}
-		return Optional.ofNullable(activePlayerCharacterMap.get(playerId));
 	}
 	
 	@Override
 	public PlayerCharacterData registerPlayerCharacter(UUID playerId, String characterName) throws PlayerCharacterRegistrationException {
 		log.debug("Inside registerPlayerCharacter(). Player id: {} Character name: {}", playerId, characterName);
-		String sanitizedName = CharacterNameNormalizationUtil.sanitize(characterName);
-		validateRegisterPlayerCharacter(playerId, sanitizedName);
-		
-		PlayerCharacterDataRecord newCharacterRecord = initializeNewPlayerCharacter(playerId, sanitizedName);
-
+		writeLock.lock();
 		try {
-			PlayerCharacterData savedCharacter = playerCharacterStorage.savePlayerCharacterData(newCharacterRecord);
-			markCharacterActive(savedCharacter);
-			return savedCharacter;
-		} catch (PlayerCharacterSaveDataException ex) {
-			throw new PlayerCharacterRegistrationException("Unable to register character.", ex);
+			String sanitizedName = CharacterNameNormalizationUtil.sanitize(characterName);
+			validateRegisterPlayerCharacter(playerId, sanitizedName);
+			
+			PlayerCharacterDataRecord newCharacterRecord = initializeNewPlayerCharacter(playerId, sanitizedName);
+
+			try {
+				PlayerCharacterData savedCharacter = playerCharacterStorage.savePlayerCharacterData(newCharacterRecord);
+				markCharacterActive(savedCharacter);
+				return savedCharacter;
+			} catch (PlayerCharacterSaveDataException ex) {
+				throw new PlayerCharacterRegistrationException("Unable to register character.", ex);
+			}
+		} finally {
+			writeLock.unlock();
 		}
 	}
 
 	@Override
 	public List<PlayerCharacterData> getActivePlayerCharacterDataByLocation(Long locationId) {
-		if (locationId == null) {
-			return List.of();
+		readLock.lock();
+		try {
+			if (locationId == null) {
+				return List.of();
+			}
+			return new ArrayList<>(activePlayersByLocation.getOrDefault(locationId, Collections.emptySet()));
+		} finally {
+			readLock.unlock();
 		}
-		return new ArrayList<>(activePlayersByLocation.getOrDefault(locationId, Collections.emptySet()));
 	}
 
 	@Override
@@ -153,15 +188,20 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 			throw new CharacterMoveException("Player data and destination location are required.");
 		}
 		
-		if( pcData instanceof PlayerCharacterDataRecord pcRecord) {
-			removeCharacterFromLocationMap(pcRecord);
-			updateCharacterLocation(pcRecord, newLocationId);
-			addCharacterToLocationMap(pcRecord);
-		} else {
-			log.warn("Couldn't perform player move; ocData was not a mutable plaeyr character record.");
-		}
+		writeLock.lock();
+		try {
+			if( pcData instanceof PlayerCharacterDataRecord pcRecord) {
+				removeCharacterFromLocationMap(pcRecord);
+				updateCharacterLocation(pcRecord, newLocationId);
+				addCharacterToLocationMap(pcRecord);
+			} else {
+				log.warn("Couldn't perform player move; ocData was not a mutable plaeyr character record.");
+			}
 
-		return pcData;
+			return pcData;
+		} finally {
+			writeLock.unlock();
+		}
 	}
 
     /* ********************************************************

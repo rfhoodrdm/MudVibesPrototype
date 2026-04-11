@@ -7,7 +7,7 @@ import com.example.mudvibe.data.messages.inbound.interfaces.HasCommandingPlayerI
 
 public sealed interface IncomingCharacterCommand 
 	extends IncomingCommand, HasCommandingPlayerId
-	permits MoveCharacterCommand, LookCommand {
+	permits MoveCharacterCommand, LookCommand, SpeechCommand {
 
 	public UUID commandingPlayerId();
 }

@@ -1,6 +1,7 @@
 package com.example.mudvibe.transport.outbound.Session;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -10,6 +11,8 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import com.example.mudvibe.data.messages.outbound.GreetingMessage;
+import com.example.mudvibe.data.player.PlayerCharacterData;
+import com.example.mudvibe.playercharacter.service.PlayerCharacterManager;
 import com.example.mudvibe.transport.outbound.messagepublisher.OutboundMessagePublisher;
 import com.example.mudvibe.util.security.SecurityUtil;
 
@@ -27,6 +30,7 @@ public class SessionController  extends TextWebSocketHandler {
 	private final SessionManager sessionManager;
 	private final OutboundMessagePublisher messagePublisher;
 	private final SecurityUtil securityUtil;
+	private final PlayerCharacterManager playerCharacterManager;
 	
     /* ********************************************************
      * 					    Public Methods
@@ -39,7 +43,9 @@ public class SessionController  extends TextWebSocketHandler {
 		session.getAttributes().putIfAbsent(SecurityUtil.PLAYER_ID_ATTRIBUTE, playerId);
 		sessionManager.addSession(session);
 		
-		messagePublisher.sendSimpleMessageToSession(session, new GreetingMessage() );
+		Optional<String> currentCharacterNameMaybe = playerCharacterManager.getActivePlayerCharacterDataByPlayerId(playerId)
+				.map(PlayerCharacterData::getCharacterName);
+		messagePublisher.sendSimpleMessageToSession(session, new GreetingMessage(currentCharacterNameMaybe.orElse(null)) );
 		log.debug("Session established for player {}. Session id: {}", playerId, session.getId());
 	}
 	

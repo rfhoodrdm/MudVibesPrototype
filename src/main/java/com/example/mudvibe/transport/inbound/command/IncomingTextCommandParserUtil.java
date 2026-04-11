@@ -11,11 +11,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import com.example.mudvibe.common.enums.MovementDirection;
+import com.example.mudvibe.common.enums.SpeechMode;
 import com.example.mudvibe.common.exception.InvalidCommandException;
 import com.example.mudvibe.common.exception.UnknownCommandException;
 import com.example.mudvibe.data.messages.inbound.IncomingCommand;
 import com.example.mudvibe.data.messages.inbound.character.LookCommand;
 import com.example.mudvibe.data.messages.inbound.character.MoveCharacterCommand;
+import com.example.mudvibe.data.messages.inbound.character.SpeechCommand;
 import com.example.mudvibe.data.messages.inbound.system.LoginCommand;
 import com.example.mudvibe.data.messages.inbound.system.LogoutCommand;
 import com.example.mudvibe.data.messages.inbound.system.RegisterCharacterCommand;
@@ -48,7 +50,7 @@ public class IncomingTextCommandParserUtil {
 			throw new UnknownCommandException("Unknown command: command line was blank.");
 		}
 		
-		String sanitizedTextCommand = commandToParse.trim();
+		String sanitizedTextCommand = CommandNormalizerUtil.normalizeCommand(commandToParse);
 		var incomingCommand = parseStringToIncomingCommand(commandingPlayerId, sanitizedTextCommand);
 		return new IncomingCommandParserResult(incomingCommand);
 	}
@@ -66,6 +68,8 @@ public class IncomingTextCommandParserUtil {
         String[] commandArguments = tokens.length > 1 ? Arrays.copyOfRange(tokens, 1, tokens.length) : new String[0];
 		
         switch (commandRootWord) {
+        case "say":
+        	return createSpeechCommand(commandingPlayerId, commandTextToParse);
         case "look":
         	return createLookCommand(commandingPlayerId, commandTextToParse, commandArguments);
 		case "login":
@@ -90,6 +94,11 @@ public class IncomingTextCommandParserUtil {
 		}
 	}
 	
+	private IncomingCommand createSpeechCommand(UUID commandingPlayerId, String commandTextToParse) {
+		String spokenText = commandTextToParse.substring("say".length()).stripLeading();
+		return new SpeechCommand(commandTextToParse, commandingPlayerId, SpeechMode.SAY, spokenText);
+	}
+
 	private IncomingCommand createLookCommand(UUID commandingPlayerId, String rawText, String[] commandArguments)
 			throws InvalidCommandException {
 		if (commandArguments.length > 2) {

@@ -1,7 +1,11 @@
 package com.example.mudvibe.transport.outbound.messageformatter.formatters;
 
+import java.util.Comparator;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Component;
 
+import com.example.mudvibe.common.enums.MovementDirection;
 import com.example.mudvibe.data.messages.outbound.RoomDescriptionMessage;
 import com.example.mudvibe.util.message.LongTextFormatter;
 
@@ -14,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 public class RoomDescriptionMessageFormatter {
 	
 	private final LongTextFormatter longTextFormatter;
+	private static final Comparator<MovementDirection> MOVEMENT_DIRECTION_COMPARATOR =
+	        Comparator.comparingInt(MovementDirection::ordinal);
 	
 	public String format(RoomDescriptionMessage message) {
 		var sb = new StringBuilder();
@@ -46,9 +52,8 @@ public class RoomDescriptionMessageFormatter {
 		}
 		
 		return message.exits().stream()
+		        .sorted(MOVEMENT_DIRECTION_COMPARATOR)
 				.map(direction -> direction.name().toLowerCase())
-				.sorted()
-				.reduce((a, b) -> a + ", " + b)
-				.orElse("none");
+				.collect(Collectors.joining(", "));
 	}
 }
