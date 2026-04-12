@@ -11,4 +11,20 @@ public enum MovementDirection {
 	NORTHEAST,
 	UP,
 	DOWN;
+	
+	public MovementDirection oppositeDirection() {
+		return switch (this) {
+		case NORTH -> MovementDirection.SOUTH;
+		case SOUTH -> MovementDirection.NORTH;
+		case EAST -> MovementDirection.WEST;
+		case WEST -> MovementDirection.EAST;
+		case NORTHEAST -> MovementDirection.SOUTHWEST;
+		case NORTHWEST -> MovementDirection.SOUTHEAST;
+		case SOUTHEAST -> MovementDirection.NORTHWEST;
+		case SOUTHWEST -> MovementDirection.NORTHEAST;
+		case UP -> MovementDirection.DOWN;
+		case DOWN -> MovementDirection.UP;
+		case null -> null;
+		};
+	}
 }

@@ -14,11 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class SpeechDescriptionResponseDelegate {
+public class SpeechDescriptionResponseDelegate extends ResponseDelegate<SpeechDescriptionMessage> {
 
-	private final AreaManager areaManager;
-	private final PlayerCharacterManager playerCharacterManager;
-	
 	public SpeechDescriptionMessage constructSpeechDescriptionResponse(UUID recipientPlayerId, String actor, String speechModeVerb, String speech) {
 		
 		SpeechDescriptionMessage message = new SpeechDescriptionMessage(recipientPlayerId, actor, speechModeVerb, speech);

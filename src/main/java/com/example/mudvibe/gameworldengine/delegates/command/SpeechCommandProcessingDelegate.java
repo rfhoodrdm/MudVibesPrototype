@@ -21,8 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class SpeechCommandProcessingDelegate extends CommandProcessingDelegate<SpeechCommand> {
 	
-	private final SpeechDescriptionResponseDelegate responseDelegate;
-	
 	@Override
 	public List<AddressedOutboundMessage> processCommand(SpeechCommand sc) throws CommandProcessingException {
 		UUID commandingPlayerId = sc.commandingPlayerId(); 
@@ -45,7 +43,7 @@ public class SpeechCommandProcessingDelegate extends CommandProcessingDelegate<S
 					?  sc.speechMode().getSpeechVerbToSelf()
 					:  sc.speechMode().getSpeechVerbToOthers();
 			
-			AddressedOutboundMessage speechMessage = responseDelegate.constructSpeechDescriptionResponse(listeningPlayerId, 
+			AddressedOutboundMessage speechMessage = speechDescriptionResponseDelegate.constructSpeechDescriptionResponse(listeningPlayerId, 
 					speaker, speechModeVerb, sc.speech());
 			outboundMessages.add(speechMessage);
 		}

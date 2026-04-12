@@ -8,7 +8,9 @@ import com.example.mudvibe.area.service.AreaManager;
 import com.example.mudvibe.common.exception.CommandProcessingException;
 import com.example.mudvibe.data.messages.inbound.IncomingCommand;
 import com.example.mudvibe.data.messages.outbound.AddressedOutboundMessage;
+import com.example.mudvibe.gameworldengine.delegates.response.MoveCharacterDescriptionMessageDelegate;
 import com.example.mudvibe.gameworldengine.delegates.response.RoomDescriptionResponseDelegate;
+import com.example.mudvibe.gameworldengine.delegates.response.SpeechDescriptionResponseDelegate;
 import com.example.mudvibe.playercharacter.service.PlayerCharacterManager;
 
 public abstract class CommandProcessingDelegate<T extends IncomingCommand> {
@@ -18,7 +20,9 @@ public abstract class CommandProcessingDelegate<T extends IncomingCommand> {
 	@Autowired protected PlayerCharacterManager playerCharacterManager;
 	
 	//response delegates to construct response messages. 
-	@Autowired protected  RoomDescriptionResponseDelegate roomDescriptionResponseDelegate;
+	@Autowired protected RoomDescriptionResponseDelegate roomDescriptionResponseDelegate;
+	@Autowired protected SpeechDescriptionResponseDelegate speechDescriptionResponseDelegate; 
+	@Autowired protected MoveCharacterDescriptionMessageDelegate messageDelegate;
 
 	
 	public abstract List<AddressedOutboundMessage> processCommand(T command) throws CommandProcessingException;
