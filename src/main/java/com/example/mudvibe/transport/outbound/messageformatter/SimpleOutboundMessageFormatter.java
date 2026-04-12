@@ -8,6 +8,7 @@ import com.example.mudvibe.data.messages.outbound.AddressedSystemNotificationMes
 import com.example.mudvibe.data.messages.outbound.CommandProcessingErrorMessage;
 import com.example.mudvibe.data.messages.outbound.EchoMessage;
 import com.example.mudvibe.data.messages.outbound.GreetingMessage;
+import com.example.mudvibe.data.messages.outbound.MoveCharacterDescriptionMessage;
 import com.example.mudvibe.data.messages.outbound.OutboundMessage;
 import com.example.mudvibe.data.messages.outbound.RoomDescriptionMessage;
 import com.example.mudvibe.data.messages.outbound.SimpleSystemResponseMessage;
@@ -17,6 +18,7 @@ import com.example.mudvibe.data.messages.outbound.SystemErrorMessage;
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.AddressedEchoMessageFormatter;
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.AddressedSystemErrorMessageFormatter;
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.AddressedSystemNotificationMessageFormatter;
+import com.example.mudvibe.transport.outbound.messageformatter.formatters.CharacterMovesMessageFormatter;
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.CommandProcessingErrorMessageFormatter;
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.EchoMessageFormatter;
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.GreetingMessageFormatter;
@@ -55,6 +57,7 @@ public class SimpleOutboundMessageFormatter implements OutboundMessageFormatter 
 		case SimpleSystemResponseMessage ssrm			-> SimpleSystemResponseMessageFormatter.format(ssrm);
 		case CommandProcessingErrorMessage cpem			-> CommandProcessingErrorMessageFormatter.format(cpem);
 		case SpeechDescriptionMessage sdm               -> SpeechDescriptionMessageFormatter.format(sdm);
+		case MoveCharacterDescriptionMessage mcdm		-> CharacterMovesMessageFormatter.format(mcdm);
 		
 		//instances, for those requiring components to work.
 		case RoomDescriptionMessage rdm 				-> roomDescriptionMessageFormatter.format(rdm);

@@ -21,10 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class RoomDescriptionResponseDelegate {
-	
-	private final AreaManager areaManager;
-	private final PlayerCharacterManager playerCharacterManager;
+public class RoomDescriptionResponseDelegate extends ResponseDelegate<RoomDescriptionMessage> {
 
 	public RoomDescriptionMessage constructRoomDescriptionMessage(UUID sendToPlayerId, RoomData room) {
 		Long locationId = room.getLocationId();
