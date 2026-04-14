@@ -16,7 +16,21 @@ public final class CommandNormalizerUtil {
 
 	private static final Map<String, String> COMMAND_ALIAS_DICTIONARY = Map.ofEntries(
 			entry("'", "say "),
-			entry("/s", "say ")
+			entry("/s", "say "),
+			entry("n", "north "),
+			entry("north-east", "northeast "),
+			entry("ne", "northeast "),
+			entry("north-west", "northwest "),
+			entry("nw", "northwest "),
+			entry("s", "south "),
+			entry("south-east", "southeast "),
+			entry("se", "southeast "),
+			entry("south-west", "southwest "),
+			entry("sw", "southwest "),
+			entry("e", "east "),
+			entry("w", "west "),
+			entry("u", "up "),
+			entry("d", "down ")
 	);
 
 	private CommandNormalizerUtil() {
@@ -24,19 +38,18 @@ public final class CommandNormalizerUtil {
 	}
 
 	public static String normalizeCommand(String incomingCommand) throws UnknownCommandException {
-		if (incomingCommand == null) {
-			throw new UnknownCommandException("Unknown command: command line was blank.");
-		}
-		String trimmedCommand = incomingCommand.trim();
 
+		String trimmedCommand = StringUtils.trim(incomingCommand);
 		if (StringUtils.isBlank(trimmedCommand)) {
-			return trimmedCommand;
+			throw new UnknownCommandException("Unknown command: command line was blank.");
 		}
 		
 		String leadingCharacter = extractLeadingCharacter(trimmedCommand);
 		String firstWord = extractFirstWord(trimmedCommand);
 		
-		if (StringUtils.isNotEmpty(leadingCharacter) && COMMAND_ALIAS_DICTIONARY.containsKey(leadingCharacter)) {
+		if (StringUtils.isNotEmpty(leadingCharacter)
+				&& !Character.isLetterOrDigit(trimmedCommand.charAt(0))
+				&& COMMAND_ALIAS_DICTIONARY.containsKey(leadingCharacter)) {
 			String replacement = COMMAND_ALIAS_DICTIONARY.get(leadingCharacter);
 			String remainingText = trimmedCommand.substring(1);
 			return replacement + remainingText.stripLeading();

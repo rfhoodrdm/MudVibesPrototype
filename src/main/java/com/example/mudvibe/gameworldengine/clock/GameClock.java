@@ -25,7 +25,7 @@ public class GameClock {
         		log.trace("Tick.");
         		subscriber.update();
         	} catch (Exception ex) {
-        		log.error("Exception thrown on game tick for subscriber {}", subscriber.getClass());
+        		log.error("Exception thrown on game tick for subscriber: {}  Exception: {}", subscriber.getClass(), ex.getLocalizedMessage());
         	}
         }
     }

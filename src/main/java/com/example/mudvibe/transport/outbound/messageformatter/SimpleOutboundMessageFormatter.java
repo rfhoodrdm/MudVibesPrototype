@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import com.example.mudvibe.data.messages.outbound.AddressedEchoMessage;
 import com.example.mudvibe.data.messages.outbound.AddressedSystemErrorMessage;
 import com.example.mudvibe.data.messages.outbound.AddressedSystemNotificationMessage;
+import com.example.mudvibe.data.messages.outbound.CharacterRosterDescriptionMessage;
 import com.example.mudvibe.data.messages.outbound.CommandProcessingErrorMessage;
 import com.example.mudvibe.data.messages.outbound.EchoMessage;
 import com.example.mudvibe.data.messages.outbound.GreetingMessage;
@@ -19,6 +20,7 @@ import com.example.mudvibe.transport.outbound.messageformatter.formatters.Addres
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.AddressedSystemErrorMessageFormatter;
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.AddressedSystemNotificationMessageFormatter;
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.CharacterMovesMessageFormatter;
+import com.example.mudvibe.transport.outbound.messageformatter.formatters.CharacterRosterDescriptionMessageFormatter;
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.CommandProcessingErrorMessageFormatter;
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.EchoMessageFormatter;
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.GreetingMessageFormatter;
@@ -58,6 +60,7 @@ public class SimpleOutboundMessageFormatter implements OutboundMessageFormatter 
 		case CommandProcessingErrorMessage cpem			-> CommandProcessingErrorMessageFormatter.format(cpem);
 		case SpeechDescriptionMessage sdm               -> SpeechDescriptionMessageFormatter.format(sdm);
 		case MoveCharacterDescriptionMessage mcdm		-> CharacterMovesMessageFormatter.format(mcdm);
+		case CharacterRosterDescriptionMessage crdm     -> CharacterRosterDescriptionMessageFormatter.format(crdm);
 		
 		//instances, for those requiring components to work.
 		case RoomDescriptionMessage rdm 				-> roomDescriptionMessageFormatter.format(rdm);

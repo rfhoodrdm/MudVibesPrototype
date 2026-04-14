@@ -10,6 +10,7 @@ public record GreetingMessage(String currentCharacterName) implements SimpleOutb
 	public static final String LOGIN_INSTRUCTIONS = """
 			Create a new character with REGISTER <character name>
 			or log in with an existing character with LOGIN <character name> to proceed. 
+			You may list your registered characters with the ROSTER.
 			""";
 	
 	public static final String CURRENT_CHARACTER_NOTICE = """
