@@ -6,7 +6,7 @@ import com.example.mudvibe.data.messages.outbound.interfaces.HasPlayerIdRecipien
 
 public sealed interface AddressedOutboundMessage extends OutboundMessage, HasPlayerIdRecipient
 	permits AddressedSystemNotificationMessage, CommandProcessingErrorMessage, AddressedEchoMessage, AddressedSystemErrorMessage, 
-		RoomDescriptionMessage, SpeechDescriptionMessage, MoveCharacterDescriptionMessage {
+		RoomDescriptionMessage, SpeechDescriptionMessage, MoveCharacterDescriptionMessage, CharacterRosterDescriptionMessage {
 
 	public UUID recipientPlayerId();
 }

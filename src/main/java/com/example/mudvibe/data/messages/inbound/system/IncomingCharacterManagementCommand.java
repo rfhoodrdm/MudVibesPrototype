@@ -4,6 +4,6 @@ import com.example.mudvibe.data.messages.inbound.interfaces.HasCommandingPlayerI
 
 public sealed interface IncomingCharacterManagementCommand 
 	extends IncomingSystemCommand, HasCommandingPlayerId
-	permits LoginCommand, RegisterCharacterCommand, LogoutCommand {
+	permits LoginCommand, RegisterCharacterCommand, LogoutCommand, CharacterRosterListCommand {
 
 }

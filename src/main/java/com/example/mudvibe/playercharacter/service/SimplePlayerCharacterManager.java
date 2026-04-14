@@ -1,5 +1,6 @@
 package com.example.mudvibe.playercharacter.service;
 
+import com.example.mudvibe.playercharacter.repository.PlayerCharacterRepository;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -45,6 +46,7 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 	private final ReadWriteLock characterStateLock = new ReentrantReadWriteLock();
 	private final Lock readLock = characterStateLock.readLock();
 	private final Lock writeLock = characterStateLock.writeLock();
+
 	
     /* ********************************************************
      * 					    Public Methods
@@ -202,6 +204,16 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 		} finally {
 			writeLock.unlock();
 		}
+	}
+	
+
+	@Override
+	public List<PlayerCharacterData> getAllCharactersByPlayerId(UUID playerId) {
+		if(null == playerId) {
+			return List.of();
+		}
+		
+		return new ArrayList<>(playerCharacterStorage.findAllPlayerCharactersByPlayerId(playerId));
 	}
 
     /* ********************************************************

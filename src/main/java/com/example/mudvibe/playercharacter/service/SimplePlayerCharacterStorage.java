@@ -69,9 +69,14 @@ public class SimplePlayerCharacterStorage implements PlayerCharacterStorage {
      * ********************************************************/
 
 	@Override
-	public List<? extends PlayerCharacterData> findAllPlayerCharactersByPlayerId(UUID playerId) {
+	public List<PlayerCharacterDataRecord> findAllPlayerCharactersByPlayerId(UUID playerId) {
+		if (null == playerId) {
+			return List.of();
+		}
+		
 		return playerCharacteRepo.findAllByPlayerId(playerId);
 	}
+
 	
     /* ********************************************************
      * 	               Static Methods and Members

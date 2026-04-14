@@ -18,6 +18,7 @@ import com.example.mudvibe.data.messages.inbound.IncomingCommand;
 import com.example.mudvibe.data.messages.inbound.character.LookCommand;
 import com.example.mudvibe.data.messages.inbound.character.MoveCharacterCommand;
 import com.example.mudvibe.data.messages.inbound.character.SpeechCommand;
+import com.example.mudvibe.data.messages.inbound.system.CharacterRosterListCommand;
 import com.example.mudvibe.data.messages.inbound.system.LoginCommand;
 import com.example.mudvibe.data.messages.inbound.system.LogoutCommand;
 import com.example.mudvibe.data.messages.inbound.system.RegisterCharacterCommand;
@@ -68,32 +69,25 @@ public class IncomingTextCommandParserUtil {
         String[] commandArguments = tokens.length > 1 ? Arrays.copyOfRange(tokens, 1, tokens.length) : new String[0];
 		
         switch (commandRootWord) {
-        case "say":
-        	return createSpeechCommand(commandingPlayerId, commandTextToParse);
-        case "look":
-        	return createLookCommand(commandingPlayerId, commandTextToParse, commandArguments);
-		case "login":
-			return createCharacterManagementCommand(commandingPlayerId, commandTextToParse, commandArguments, SystemCommandType.LOGIN);
-		case "logout":
-			return createCharacterManagementCommand(commandingPlayerId, commandTextToParse, commandArguments, SystemCommandType.LOGOUT);
-		case "register":
-			return createCharacterManagementCommand(commandingPlayerId, commandTextToParse, commandArguments, SystemCommandType.REGISTER);
-        case "north": case "n":
-        case "south": case "s":
-        case "east": case "e":
-        case "west": case "w":
-        case "northeast": case "ne": case "north-east":
-        case "northwest": case "nw": case "north-west":
-        case "southeast": case "se": case "south-east":
-        case "southwest": case "sw": case "south-west":
-        case "up": case "u":
-        case "down": case "d":
-            return createMovementCommand(commandingPlayerId, commandTextToParse, commandRootWord);
+        case "north": 		case "south": 		case "east": 		case "west":
+        case "northeast": 	case "northwest": 	case "southeast": 	case "southwest":
+        case "up": 			case "down":		return createMovementCommand(commandingPlayerId, commandTextToParse, commandRootWord);
+        
+        case "say":			return createSpeechCommand(commandingPlayerId, commandTextToParse);
+        case "look":		return createLookCommand(commandingPlayerId, commandTextToParse, commandArguments);
+		case "login":		return createCharacterManagementCommand(commandingPlayerId, commandTextToParse, commandArguments, SystemCommandType.LOGIN);
+		case "roster":		return createCharacterRosterListCommand(commandingPlayerId, commandTextToParse);
+		case "logout":		return createCharacterManagementCommand(commandingPlayerId, commandTextToParse, commandArguments, SystemCommandType.LOGOUT);
+		case "register":	return createCharacterManagementCommand(commandingPlayerId, commandTextToParse, commandArguments, SystemCommandType.REGISTER);
 		default:
 			throw new UnknownCommandException("Unknown command: " + commandTextToParse);
 		}
 	}
 	
+	private IncomingCommand createCharacterRosterListCommand(UUID commandingPlayerId, String commandTextToParse) {
+		return new CharacterRosterListCommand(commandTextToParse, commandingPlayerId);
+	}
+
 	private IncomingCommand createSpeechCommand(UUID commandingPlayerId, String commandTextToParse) {
 		String spokenText = commandTextToParse.substring("say".length()).stripLeading();
 		return new SpeechCommand(commandTextToParse, commandingPlayerId, SpeechMode.SAY, spokenText);
