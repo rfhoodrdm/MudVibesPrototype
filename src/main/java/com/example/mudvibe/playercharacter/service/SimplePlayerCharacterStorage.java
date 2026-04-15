@@ -1,9 +1,11 @@
 package com.example.mudvibe.playercharacter.service;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import com.example.mudvibe.common.exception.PlayerCharacterLoadDataException;
 import com.example.mudvibe.common.exception.PlayerCharacterSaveDataException;
@@ -28,27 +30,22 @@ public class SimplePlayerCharacterStorage implements PlayerCharacterStorage {
      * ********************************************************/
 
 	@Override
-	public PlayerCharacterData savePlayerCharacterData(PlayerCharacterData dataToSave)
+	public PlayerCharacterDataRecord savePlayerCharacterData(PlayerCharacterDataRecord dataToSave)
 			throws PlayerCharacterSaveDataException {
 		
 		if (dataToSave == null) {
 			throw new PlayerCharacterSaveDataException("Player character data cannot be null.");
 		}
 		
-		if (!(dataToSave instanceof PlayerCharacterDataRecord record)) {
-			throw new PlayerCharacterSaveDataException("Unsupported player character data type: " + dataToSave.getClass().getName());
-		}
-		
 		try {
-			return playerCharacteRepo.save(record);
+			return playerCharacteRepo.save(dataToSave);
 		} catch (Exception ex) {
 			throw new PlayerCharacterSaveDataException("Unable to save player character data.", ex);
 		}
 	}
 
-
 	@Override
-	public PlayerCharacterData loadPlayerCharacterDataByCharacterName(String characterName)
+	public PlayerCharacterDataRecord loadPlayerCharacterDataByCharacterName(String characterName)
 			throws PlayerCharacterLoadDataException {
 		
 		var sanitizedName = CharacterNameNormalizationUtil.sanitize(characterName);
@@ -59,6 +56,19 @@ public class SimplePlayerCharacterStorage implements PlayerCharacterStorage {
 		return playerCharacteRepo.findByCharacterName(sanitizedName)
 				.<PlayerCharacterLoadDataException>orElseThrow(() -> new PlayerCharacterLoadDataException("Character not found: " + sanitizedName));
 	} 
+	
+	@Override
+	public List<PlayerCharacterDataRecord> saveAllPlayerCharacterData(Collection<PlayerCharacterDataRecord> playerCharactersToSaveList) {
+		log.debug("Inside saveAllPlayerCharacterData()");
+		if(CollectionUtils.isEmpty(playerCharactersToSaveList)) {
+			log.warn("Found no character data to save. Returning.");
+			return List.of();
+		}
+
+		List<PlayerCharacterDataRecord> savedCharacterDataList =  playerCharacteRepo.saveAll(playerCharactersToSaveList);
+		log.debug("Successfully saved {} characters.", savedCharacterDataList.size());
+		return savedCharacterDataList;
+	}
 	
     /* ********************************************************
      * 					    Helper Methods
