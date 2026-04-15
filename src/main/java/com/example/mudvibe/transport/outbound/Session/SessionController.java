@@ -25,7 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 public class SessionController  extends TextWebSocketHandler {
 	
 	public static final String WEBSOCKET_TRASPORT_ERROR_MESSAGE = "[system] The gears that move the world rattle and churn suspiciously...." ;
-	public static final String WEBSOCKET_INCOMING_MESSAGE = "[system] The void does not acknowledge your shout.";
+	public static final String LIVE_UPDATE_PING_MESSAGE = "__mudvibes_ping__";
+	public static final String LIVE_UPDATE_PONG_MESSAGE = "__mudvibes_pong__";
 	
 	private final SessionManager sessionManager;
 	private final OutboundMessagePublisher messagePublisher;
@@ -75,11 +76,20 @@ public class SessionController  extends TextWebSocketHandler {
 				.orElseGet(() -> securityUtil.getPlayerId());
 		log.debug("Received websocket text message from player {}.", playerId);
 		log.trace("Incoming websocket payload: {}", message != null ? message.getPayload() : "<null>");
-        try {
-            session.sendMessage(new TextMessage(WEBSOCKET_INCOMING_MESSAGE));
-        } catch (IOException ex) {
-            log.warn("Unable to send message to session {}: {}", session.getId(), ex.getMessage());
-            sessionManager.removeSession(session);
-        }
+		sendWebSocketMessage(session, determineWebSocketResponsePayload());
+		log.debug("Sent live update heartbeat response to player {}.", playerId);
+	}
+	
+	static String determineWebSocketResponsePayload() {
+		return LIVE_UPDATE_PONG_MESSAGE;
+	}
+	
+	private void sendWebSocketMessage(WebSocketSession session, String messageText) {
+		try {
+			session.sendMessage(new TextMessage(messageText));
+		} catch (IOException ex) {
+			log.warn("Unable to send message to session {}: {}", session.getId(), ex.getMessage());
+			sessionManager.removeSession(session);
+		}
 	}
 }

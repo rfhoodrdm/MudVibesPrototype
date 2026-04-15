@@ -1,8 +1,8 @@
 package com.example.mudvibe.playercharacter.service;
 
-import com.example.mudvibe.playercharacter.repository.PlayerCharacterRepository;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -40,9 +40,9 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 	private final PlayerCharacterStorage playerCharacterStorage;
 	private final SystemClockUtil clockUtil;
 	
-	private final Map<UUID, PlayerCharacterData> activePlayerCharacterMap = new ConcurrentHashMap<>();	     //player Id to character data mapping.
-	private final Map<String, PlayerCharacterData> currentlyActivePlayerMap = new ConcurrentHashMap<>();	 //character name to character data mapping.
-	private final Map<Long, Set<PlayerCharacterData>> activePlayersByLocation = new ConcurrentHashMap<>();   //locationId to mapping of characters in that location.
+	private final Map<UUID, PlayerCharacterDataRecord> activePlayerCharacterMap = new ConcurrentHashMap<>();	   //player Id to character data mapping.
+	private final Map<String, PlayerCharacterDataRecord> currentlyActivePlayerMap = new ConcurrentHashMap<>();	   //character name to character data mapping.
+	private final Map<Long, Set<PlayerCharacterDataRecord>> activePlayersByLocation = new ConcurrentHashMap<>();   //locationId to mapping of characters in that location.
 	private final ReadWriteLock characterStateLock = new ReentrantReadWriteLock();
 	private final Lock readLock = characterStateLock.readLock();
 	private final Lock writeLock = characterStateLock.writeLock();
@@ -60,7 +60,7 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 		try {
 			var sanitizedName = validateLoginPlayerCharacterRequest(playerId, characterName);
 			
-			PlayerCharacterData characterData = loadCharacterData(sanitizedName);
+			PlayerCharacterDataRecord characterData = loadCharacterData(sanitizedName);
 			if (characterData == null) {
 				throw new CharacterLoginException("Character does not exist.");
 			}
@@ -86,7 +86,7 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 				return Optional.empty();
 			}
 			
-			PlayerCharacterData removedCharacter = activePlayerCharacterMap.remove(playerId);
+			PlayerCharacterDataRecord removedCharacter = activePlayerCharacterMap.remove(playerId);
 			if (removedCharacter == null) {
 				return Optional.empty();
 			}
@@ -112,7 +112,7 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 			}
 			
 			var normalizedName = CharacterNameNormalizationUtil.normalize(sanitizedName);
-			PlayerCharacterData removedCharacter = currentlyActivePlayerMap.remove(normalizedName);
+			PlayerCharacterDataRecord removedCharacter = currentlyActivePlayerMap.remove(normalizedName);
 			if (removedCharacter == null) {
 				return null;
 			}
@@ -158,7 +158,7 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 			PlayerCharacterDataRecord newCharacterRecord = initializeNewPlayerCharacter(playerId, sanitizedName);
 
 			try {
-				PlayerCharacterData savedCharacter = playerCharacterStorage.savePlayerCharacterData(newCharacterRecord);
+				PlayerCharacterDataRecord savedCharacter = playerCharacterStorage.savePlayerCharacterData(newCharacterRecord);
 				markCharacterActive(savedCharacter);
 				return savedCharacter;
 			} catch (PlayerCharacterSaveDataException ex) {
@@ -206,7 +206,6 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 		}
 	}
 	
-
 	@Override
 	public List<PlayerCharacterData> getAllCharactersByPlayerId(UUID playerId) {
 		if(null == playerId) {
@@ -214,6 +213,24 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 		}
 		
 		return new ArrayList<>(playerCharacterStorage.findAllPlayerCharactersByPlayerId(playerId));
+	}
+	
+	@Override
+	public boolean saveAllActiveCharacters() {
+		log.debug("inside saveAllActiveCharacters()");
+		
+		readLock.lock();
+		try {
+			Collection<PlayerCharacterDataRecord> activePlayerCharacters = activePlayerCharacterMap.values();
+			playerCharacterStorage.saveAllPlayerCharacterData(activePlayerCharacters);
+			return true;
+		} catch (Exception ex) {
+			log.error("Unable to save all player character data due to an exception: {}", ex.getLocalizedMessage());
+			log.trace("Stack trace: ", ex);
+			return false;
+		} finally {
+			readLock.unlock();
+		}
 	}
 
     /* ********************************************************
@@ -243,7 +260,7 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 		}
 	}
 	
-	private PlayerCharacterData loadCharacterData(String characterName) throws CharacterLoginException {
+	private PlayerCharacterDataRecord loadCharacterData(String characterName) throws CharacterLoginException {
 		try {
 			return playerCharacterStorage.loadPlayerCharacterDataByCharacterName(characterName);
 		} catch (PlayerCharacterLoadDataException ex) {
@@ -251,7 +268,7 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 		}
 	}
 	
-	private void saveCharacterData(PlayerCharacterData characterData) throws CharacterLogoutException {
+	private void saveCharacterData(PlayerCharacterDataRecord characterData) throws CharacterLogoutException {
 		try {
 			playerCharacterStorage.savePlayerCharacterData(characterData);
 		} catch (PlayerCharacterSaveDataException ex) {
@@ -259,7 +276,7 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 		}
 	}
 	
-	private void markCharacterActive(PlayerCharacterData characterData) {
+	private void markCharacterActive(PlayerCharacterDataRecord characterData) {
 		if (characterData == null || characterData.getPlayerId() == null || characterData.getCharacterName() == null) {
 			return;
 		}
@@ -272,14 +289,14 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 		addCharacterToLocationMap(characterData);
 	}
 	
-	private void removeCharacterFromNameMap(PlayerCharacterData characterData) {
+	private void removeCharacterFromNameMap(PlayerCharacterDataRecord characterData) {
 		var normalizedName = CharacterNameNormalizationUtil.normalize(characterData.getCharacterName());
 		if (normalizedName != null) {
 			currentlyActivePlayerMap.remove(normalizedName, characterData);
 		}
 	}
 	
-	private void addCharacterToLocationMap(PlayerCharacterData characterData) {
+	private void addCharacterToLocationMap(PlayerCharacterDataRecord characterData) {
 		if (characterData == null || characterData.getLocationId() == null) {
 			return;
 		}
@@ -288,11 +305,11 @@ public class SimplePlayerCharacterManager implements PlayerCharacterManager {
 			.add(characterData);
 	}
 	
-	private void removeCharacterFromLocationMap(PlayerCharacterData characterData) {
+	private void removeCharacterFromLocationMap(PlayerCharacterDataRecord characterData) {
 		if (characterData == null || characterData.getLocationId() == null) {
 			return;
 		}
-		Set<PlayerCharacterData> occupants = activePlayersByLocation.get(characterData.getLocationId());
+		Set<PlayerCharacterDataRecord> occupants = activePlayersByLocation.get(characterData.getLocationId());
 		if (occupants == null) {
 			return;
 		}

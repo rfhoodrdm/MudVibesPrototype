@@ -27,4 +27,6 @@ public interface PlayerCharacterManager {
 	public PlayerCharacterData movePlayerCharacter(PlayerCharacterData pcData, Long newLocationId) throws CharacterMoveException;
 
 	public List<PlayerCharacterData> getAllCharactersByPlayerId(UUID playerId);
+
+	boolean saveAllActiveCharacters();
 }

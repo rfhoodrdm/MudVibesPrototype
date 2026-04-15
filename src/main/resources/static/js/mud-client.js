@@ -8,7 +8,13 @@ const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttri
 let socket;
 const MAX_OUTPUT_LINES = 400;
 const RECONNECT_INTERVAL_MS = 2000;
+const LIVE_UPDATE_PING_INTERVAL_MS = 15000;
+const LIVE_UPDATE_PONG_TIMEOUT_MS = 5000;
+const LIVE_UPDATE_PING_MESSAGE = '__mudvibes_ping__';
+const LIVE_UPDATE_PONG_MESSAGE = '__mudvibes_pong__';
 let reconnectTimerId;
+let liveUpdatePingTimerId;
+let liveUpdatePongTimeoutId;
 
 const isAtBottom = () => {
     return outputEl.scrollTop + outputEl.clientHeight >= outputEl.scrollHeight - 4;
@@ -58,6 +64,18 @@ const clearReconnectTimer = () => {
     }
 };
 
+const clearLiveUpdateHeartbeat = () => {
+    if (liveUpdatePingTimerId) {
+        window.clearInterval(liveUpdatePingTimerId);
+        liveUpdatePingTimerId = undefined;
+    }
+
+    if (liveUpdatePongTimeoutId) {
+        window.clearTimeout(liveUpdatePongTimeoutId);
+        liveUpdatePongTimeoutId = undefined;
+    }
+};
+
 const scheduleReconnect = (statusText) => {
     setConnectionState(statusText);
 
@@ -71,12 +89,41 @@ const scheduleReconnect = (statusText) => {
     }, RECONNECT_INTERVAL_MS);
 };
 
-const forceLiveUpdateReconnect = (statusText) => {
+const reconnectLiveUpdates = (statusText) => {
+    clearLiveUpdateHeartbeat();
     scheduleReconnect(statusText);
 
     if (socket && ![WebSocket.CLOSING, WebSocket.CLOSED].includes(socket.readyState)) {
         socket.close();
     }
+};
+
+const sendLiveUpdatePing = () => {
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+        reconnectLiveUpdates('Reconnecting for live updates…');
+        return;
+    }
+
+    try {
+        socket.send(LIVE_UPDATE_PING_MESSAGE);
+    } catch (error) {
+        reconnectLiveUpdates('Reconnecting for live updates…');
+        return;
+    }
+
+    if (liveUpdatePongTimeoutId) {
+        window.clearTimeout(liveUpdatePongTimeoutId);
+    }
+
+    liveUpdatePongTimeoutId = window.setTimeout(() => {
+        liveUpdatePongTimeoutId = undefined;
+        reconnectLiveUpdates('Reconnecting for live updates…');
+    }, LIVE_UPDATE_PONG_TIMEOUT_MS);
+};
+
+const startLiveUpdateHeartbeat = () => {
+    clearLiveUpdateHeartbeat();
+    liveUpdatePingTimerId = window.setInterval(sendLiveUpdatePing, LIVE_UPDATE_PING_INTERVAL_MS);
 };
 
 const connect = () => {
@@ -104,6 +151,7 @@ const connect = () => {
 
         clearReconnectTimer();
         setConnectionState('Receiving live updates');
+        startLiveUpdateHeartbeat();
     });
 
     nextSocket.addEventListener('close', () => {
@@ -111,6 +159,7 @@ const connect = () => {
             return;
         }
 
+        clearLiveUpdateHeartbeat();
         scheduleReconnect('Reconnecting for live updates…');
     });
 
@@ -119,7 +168,7 @@ const connect = () => {
             return;
         }
 
-        scheduleReconnect('Update stream errored, retrying…');
+        reconnectLiveUpdates('Update stream errored, retrying…');
 
         if (![WebSocket.CLOSING, WebSocket.CLOSED].includes(nextSocket.readyState)) {
             nextSocket.close();
@@ -128,6 +177,14 @@ const connect = () => {
 
     nextSocket.addEventListener('message', (event) => {
         if (socket !== nextSocket) {
+            return;
+        }
+
+        if (event.data === LIVE_UPDATE_PONG_MESSAGE) {
+            if (liveUpdatePongTimeoutId) {
+                window.clearTimeout(liveUpdatePongTimeoutId);
+                liveUpdatePongTimeoutId = undefined;
+            }
             return;
         }
 
@@ -160,12 +217,7 @@ const sendInput = async () => {
         }
 
         appendLines('[system] Unable to send command.');
-
-        if (response.status === 408 || response.status >= 500) {
-            forceLiveUpdateReconnect('Command send failed, reconnecting live updates…');
-        }
     } catch (error) {
-        forceLiveUpdateReconnect('Command send failed, reconnecting live updates…');
         appendLines('[system] Unable to send command.');
     }
 };
