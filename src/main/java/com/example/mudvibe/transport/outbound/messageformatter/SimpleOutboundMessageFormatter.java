@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import com.example.mudvibe.data.messages.outbound.AddressedEchoMessage;
 import com.example.mudvibe.data.messages.outbound.AddressedSystemErrorMessage;
 import com.example.mudvibe.data.messages.outbound.AddressedSystemNotificationMessage;
+import com.example.mudvibe.data.messages.outbound.CharacterLogDescriptionMessage;
 import com.example.mudvibe.data.messages.outbound.CharacterRosterDescriptionMessage;
 import com.example.mudvibe.data.messages.outbound.CommandProcessingErrorMessage;
 import com.example.mudvibe.data.messages.outbound.EchoMessage;
@@ -19,6 +20,7 @@ import com.example.mudvibe.data.messages.outbound.SystemErrorMessage;
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.AddressedEchoMessageFormatter;
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.AddressedSystemErrorMessageFormatter;
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.AddressedSystemNotificationMessageFormatter;
+import com.example.mudvibe.transport.outbound.messageformatter.formatters.CharacterLogDescriptionMessageFormatter;
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.CharacterMovesMessageFormatter;
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.CharacterRosterDescriptionMessageFormatter;
 import com.example.mudvibe.transport.outbound.messageformatter.formatters.CommandProcessingErrorMessageFormatter;
@@ -61,6 +63,7 @@ public class SimpleOutboundMessageFormatter implements OutboundMessageFormatter 
 		case SpeechDescriptionMessage sdm               -> SpeechDescriptionMessageFormatter.format(sdm);
 		case MoveCharacterDescriptionMessage mcdm		-> CharacterMovesMessageFormatter.format(mcdm);
 		case CharacterRosterDescriptionMessage crdm     -> CharacterRosterDescriptionMessageFormatter.format(crdm);
+		case CharacterLogDescriptionMessage cldm		-> CharacterLogDescriptionMessageFormatter.format(cldm);
 		
 		//instances, for those requiring components to work.
 		case RoomDescriptionMessage rdm 				-> roomDescriptionMessageFormatter.format(rdm);

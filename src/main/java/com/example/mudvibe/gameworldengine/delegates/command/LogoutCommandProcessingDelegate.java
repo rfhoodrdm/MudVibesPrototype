@@ -1,5 +1,6 @@
 package com.example.mudvibe.gameworldengine.delegates.command;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -10,6 +11,8 @@ import com.example.mudvibe.common.exception.CommandProcessingException;
 import com.example.mudvibe.data.messages.inbound.system.LogoutCommand;
 import com.example.mudvibe.data.messages.outbound.AddressedOutboundMessage;
 import com.example.mudvibe.data.messages.outbound.AddressedSystemNotificationMessage;
+import com.example.mudvibe.data.messages.outbound.CharacterLogDescriptionMessage;
+import com.example.mudvibe.data.messages.outbound.CharacterLogDescriptionMessage.LogAction;
 import com.example.mudvibe.data.player.PlayerCharacterData;
 
 @Component
@@ -22,13 +25,31 @@ public class LogoutCommandProcessingDelegate extends CommandProcessingDelegate<L
 		
 		try {
 			Optional<PlayerCharacterData> pcDataMaybe = playerCharacterManager.logoutPlayerCharacterByPlayerId(loc.commandingPlayerId());
-			Optional<AddressedOutboundMessage> logoutNotificationMaybe = pcDataMaybe.map(pcData -> constructLogoutNotification(pcData));
+			if (pcDataMaybe.isEmpty()) {
+				return List.of();	//no messages to send.
+			}
+			
+			PlayerCharacterData pcData = pcDataMaybe.get();
+			AddressedOutboundMessage logoutNotification = constructLogoutNotification(pcData);
 
-			return logoutNotificationMaybe.stream()
+			List<PlayerCharacterData> pcDataForWitnessesList =  playerCharacterManager.getActivePlayerCharacterDataByLocation(pcData.getLocationId());
+			List<AddressedOutboundMessage> messagesForWitnesesList = pcDataForWitnessesList.stream()
+					.filter(witnessData -> !witnessData.getPlayerId().equals(pcData.getPlayerId()))
+					.map(witnessPcData -> constructLogoutNotificationsForOtherPlayer(witnessPcData, pcData.getCharacterName()))
 					.toList();
+			
+			List<AddressedOutboundMessage> messageList = new ArrayList<>();
+			messageList.add(logoutNotification);
+			messageList.addAll(messagesForWitnesesList);
+			return messageList;
 		} catch (CharacterLogoutException ex) {
 			throw new CommandProcessingException("Unable to logout character: " + ex.getMessage(), ex);
 		}
+	}
+	
+	private AddressedOutboundMessage constructLogoutNotificationsForOtherPlayer(PlayerCharacterData pcData, String characterLoggingOut) {
+		CharacterLogDescriptionMessage message = new CharacterLogDescriptionMessage(pcData.getPlayerId(), characterLoggingOut, LogAction.LOGOUT);
+		return message;
 	}
 	
 	private AddressedSystemNotificationMessage constructLogoutNotification(PlayerCharacterData pcData) {

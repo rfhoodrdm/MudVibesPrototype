@@ -23,12 +23,17 @@ public class MoveCharacterDescriptionMessageDelegate extends ResponseDelegate<Mo
 
 		MovementDirection oppositeMovementDirection = movementDirection.oppositeDirection();
 		boolean isOneWay = destinationRoom.getDirectionalExits().stream()
+				.map(exit -> exit.getMovementDirection())
 				.noneMatch(exit -> exit.equals(oppositeMovementDirection));	//TODO: eventually factor in portal travel to determine if one way.
 		
 		//Arriving characters will move in from opposite direction of chosen movement. E.g. move north -> arrive from south.
 		MovementDirection movementDirectionFromPerspective = (TransitDirection.ARRIVING.equals(transitType))
 				?  oppositeMovementDirection
 			    :  movementDirection;
+		
+		destinationRoom.getDirectionalExits().forEach( exit -> log.info(exit.getMovementDirection().toString()));
+		log.info("One way? {}    Movement direction: {}   Opposite movement direction: {}",
+				isOneWay, movementDirection, oppositeMovementDirection);
 
 		return new MoveCharacterDescriptionMessage(recipientPlayerId, characterNameMoving, transitType, movementDirectionFromPerspective, isOneWay);
 	}
