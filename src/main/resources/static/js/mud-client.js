@@ -71,6 +71,14 @@ const scheduleReconnect = (statusText) => {
     }, RECONNECT_INTERVAL_MS);
 };
 
+const forceLiveUpdateReconnect = (statusText) => {
+    scheduleReconnect(statusText);
+
+    if (socket && ![WebSocket.CLOSING, WebSocket.CLOSED].includes(socket.readyState)) {
+        socket.close();
+    }
+};
+
 const connect = () => {
     if (socket && [WebSocket.CONNECTING, WebSocket.OPEN].includes(socket.readyState)) {
         return;
@@ -148,8 +156,16 @@ const sendInput = async () => {
 
         if (response.ok) {
             inputEl.value = '';
+            return;
+        }
+
+        appendLines('[system] Unable to send command.');
+
+        if (response.status === 408 || response.status >= 500) {
+            forceLiveUpdateReconnect('Command send failed, reconnecting live updates…');
         }
     } catch (error) {
+        forceLiveUpdateReconnect('Command send failed, reconnecting live updates…');
         appendLines('[system] Unable to send command.');
     }
 };

@@ -32,7 +32,7 @@ public class MoveCharacterDescriptionMessageDelegate extends ResponseDelegate<Mo
 			    :  movementDirection;
 		
 		destinationRoom.getDirectionalExits().forEach( exit -> log.info(exit.getMovementDirection().toString()));
-		log.info("One way? {}    Movement direction: {}   Opposite movement direction: {}",
+		log.debug("One way? {}    Movement direction: {}   Opposite movement direction: {}",
 				isOneWay, movementDirection, oppositeMovementDirection);
 
 		return new MoveCharacterDescriptionMessage(recipientPlayerId, characterNameMoving, transitType, movementDirectionFromPerspective, isOneWay);
