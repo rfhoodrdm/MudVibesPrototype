@@ -7,6 +7,8 @@ const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttri
 
 let socket;
 const MAX_OUTPUT_LINES = 400;
+const RECONNECT_INTERVAL_MS = 2000;
+let reconnectTimerId;
 
 const isAtBottom = () => {
     return outputEl.scrollTop + outputEl.clientHeight >= outputEl.scrollHeight - 4;
@@ -49,25 +51,86 @@ const setConnectionState = (text) => {
     statusEl.textContent = text;
 };
 
+const clearReconnectTimer = () => {
+    if (reconnectTimerId) {
+        window.clearTimeout(reconnectTimerId);
+        reconnectTimerId = undefined;
+    }
+};
+
+const scheduleReconnect = (statusText) => {
+    setConnectionState(statusText);
+
+    if (reconnectTimerId) {
+        return;
+    }
+
+    reconnectTimerId = window.setTimeout(() => {
+        reconnectTimerId = undefined;
+        connect();
+    }, RECONNECT_INTERVAL_MS);
+};
+
+const forceLiveUpdateReconnect = (statusText) => {
+    scheduleReconnect(statusText);
+
+    if (socket && ![WebSocket.CLOSING, WebSocket.CLOSED].includes(socket.readyState)) {
+        socket.close();
+    }
+};
+
 const connect = () => {
+    if (socket && [WebSocket.CONNECTING, WebSocket.OPEN].includes(socket.readyState)) {
+        return;
+    }
+
     const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const url = `${scheme}://${window.location.host}/ws/mud`;
-    socket = new WebSocket(url);
+    let nextSocket;
 
-    socket.addEventListener('open', () => {
+    try {
+        nextSocket = new WebSocket(url);
+    } catch (error) {
+        scheduleReconnect('Unable to open live updates, retrying…');
+        return;
+    }
+
+    socket = nextSocket;
+
+    nextSocket.addEventListener('open', () => {
+        if (socket !== nextSocket) {
+            return;
+        }
+
+        clearReconnectTimer();
         setConnectionState('Receiving live updates');
     });
 
-    socket.addEventListener('close', () => {
-        setConnectionState('Reconnecting for live updates…');
-        setTimeout(connect, 1500);
+    nextSocket.addEventListener('close', () => {
+        if (socket !== nextSocket) {
+            return;
+        }
+
+        scheduleReconnect('Reconnecting for live updates…');
     });
 
-    socket.addEventListener('error', () => {
-        setConnectionState('Update stream errored, retrying…');
+    nextSocket.addEventListener('error', () => {
+        if (socket !== nextSocket) {
+            return;
+        }
+
+        scheduleReconnect('Update stream errored, retrying…');
+
+        if (![WebSocket.CLOSING, WebSocket.CLOSED].includes(nextSocket.readyState)) {
+            nextSocket.close();
+        }
     });
 
-    socket.addEventListener('message', (event) => {
+    nextSocket.addEventListener('message', (event) => {
+        if (socket !== nextSocket) {
+            return;
+        }
+
         appendLines(event.data);
     });
 };
@@ -93,8 +156,16 @@ const sendInput = async () => {
 
         if (response.ok) {
             inputEl.value = '';
+            return;
+        }
+
+        appendLines('[system] Unable to send command.');
+
+        if (response.status === 408 || response.status >= 500) {
+            forceLiveUpdateReconnect('Command send failed, reconnecting live updates…');
         }
     } catch (error) {
+        forceLiveUpdateReconnect('Command send failed, reconnecting live updates…');
         appendLines('[system] Unable to send command.');
     }
 };

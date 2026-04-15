@@ -36,14 +36,14 @@ public class CharacterMovesMessageFormatter {
 		}
 		
 		return switch (movementDirection) {
-		case NORTH -> "the north";
-		case SOUTH -> "the south";
-		case EAST -> "the east";
-		case WEST -> "the west";
-		case NORTHEAST -> "the northeast";
-		case NORTHWEST -> "the northwest";
-		case SOUTHEAST -> "the southeast";
-		case SOUTHWEST -> "the southwest";
+		case NORTH -> "north";
+		case SOUTH -> "south";
+		case EAST -> "east";
+		case WEST -> "west";
+		case NORTHEAST -> "northeast";
+		case NORTHWEST -> "northwest";
+		case SOUTHEAST -> "southeast";
+		case SOUTHWEST -> "southwest";
 		case UP -> "above";
 		case DOWN -> "below";
 		};
